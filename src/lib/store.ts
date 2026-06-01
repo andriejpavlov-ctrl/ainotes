@@ -250,9 +250,14 @@ export const useStore = create<State>((set, get) => ({
 
     const { error } = await supabase.from("tags").insert({ id, user_id: userId, name, color });
     if (error) {
-      // Откат при ошибке.
+      // Откат оптимистичного тега.
       set((s) => ({ tags: s.tags.filter((t) => t.id !== id) }));
       console.error("Не удалось создать тег:", error);
+      // Дубликат имени (unique constraint): тег уже существует.
+      if (error.code === "23505" || /duplicate key|unique constraint/i.test(error.message)) {
+        await get().refresh(); // подтягиваем существующий тег в список
+        throw new Error(`Тег «${name}» уже существует.`);
+      }
       throw new Error(error.message || "Не удалось создать тег");
     }
     return tag;
