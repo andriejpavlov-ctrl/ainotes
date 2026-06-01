@@ -1,0 +1,167 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f7f7f5;
+  --panel: #ffffff;
+  --border: #e6e6e3;
+  --text: #1f2024;
+  --muted: #8a8a85;
+  --accent: #f0a500;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  /* Учитываем «чёлку»/нижнюю панель в iOS Safari. */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overscroll-behavior: none;
+}
+
+/* Не даём iOS зумить при фокусе на инпутах (шрифт ≥16px). */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
+
+/* ───────────────── Редактор (ProseMirror) ───────────────── */
+.ProseMirror {
+  outline: none;
+  min-height: 50vh;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.ProseMirror > * + * {
+  margin-top: 0.6em;
+}
+.ProseMirror h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-top: 1em;
+}
+.ProseMirror h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin-top: 0.9em;
+}
+.ProseMirror h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.4rem;
+}
+.ProseMirror ul {
+  list-style: disc;
+}
+.ProseMirror ol {
+  list-style: decimal;
+}
+.ProseMirror blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 0.9rem;
+  color: var(--muted);
+  font-style: italic;
+}
+.ProseMirror pre {
+  background: #1f2024;
+  color: #f4f4f4;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9rem;
+  overflow-x: auto;
+}
+.ProseMirror code {
+  background: #ecebe8;
+  border-radius: 4px;
+  padding: 0.1rem 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.ProseMirror pre code {
+  background: none;
+  padding: 0;
+}
+.ProseMirror a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+.ProseMirror img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+/* Чек-листы */
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 0.2rem;
+}
+
+/* Таблицы (референс — Confluence) */
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.5rem 0;
+  overflow: hidden;
+  table-layout: fixed;
+}
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  vertical-align: top;
+  min-width: 3rem;
+}
+.ProseMirror th {
+  background: #f1f1ee;
+  font-weight: 600;
+  text-align: left;
+}
+.ProseMirror .selectedCell::after {
+  background: rgba(240, 165, 0, 0.18);
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ProseMirror td,
+.ProseMirror th {
+  position: relative;
+}
+
+/* Плейсхолдер */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: var(--muted);
+  pointer-events: none;
+  height: 0;
+}
+
+/* Скрываем скроллбары там, где они мешают на мобильном. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
