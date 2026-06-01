@@ -237,18 +237,24 @@ export const useStore = create<State>((set, get) => ({
   createTag: async (name, color) => {
     const { userId } = get();
     if (!userId) return null;
-    const { data, error } = await supabase
-      .from("tags")
-      .insert({ user_id: userId, name, color })
-      .select("*")
-      .single();
-    if (error || !data) {
-      console.error("Не удалось создать тег:", error);
-      // Пробрасываем, чтобы интерфейс показал причину.
-      throw new Error(error?.message || "Не удалось создать тег");
-    }
-    const tag = data as Tag;
+    // Оптимистично: тег появляется сразу, запись в БД — фоном.
+    const id = crypto.randomUUID();
+    const tag: Tag = {
+      id,
+      user_id: userId,
+      name,
+      color,
+      created_at: new Date().toISOString(),
+    };
     set((s) => ({ tags: [...s.tags, tag].sort((a, b) => a.name.localeCompare(b.name)) }));
+
+    const { error } = await supabase.from("tags").insert({ id, user_id: userId, name, color });
+    if (error) {
+      // Откат при ошибке.
+      set((s) => ({ tags: s.tags.filter((t) => t.id !== id) }));
+      console.error("Не удалось создать тег:", error);
+      throw new Error(error.message || "Не удалось создать тег");
+    }
     return tag;
   },
 
