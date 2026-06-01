@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAnthropic, ANTHROPIC_MODEL, textFromMessage } from "@/lib/anthropic";
+import { getAnthropic, createMessage, textFromMessage } from "@/lib/anthropic";
 
 export const runtime = "nodejs";
 
@@ -40,8 +40,7 @@ export async function POST(req: Request) {
 
   try {
     const anthropic = getAnthropic();
-    const message = await anthropic.messages.create({
-      model: ANTHROPIC_MODEL,
+    const message = await createMessage(anthropic, {
       max_tokens: 1500,
       system:
         "Ты — редактор текста. Выполняй задание над присланным фрагментом и возвращай ТОЛЬКО переработанный текст без пояснений, кавычек и Markdown-обёрток. Сохраняй язык оригинала.",

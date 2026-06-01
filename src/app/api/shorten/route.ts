@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAnthropic, ANTHROPIC_MODEL, textFromMessage } from "@/lib/anthropic";
+import { getAnthropic, createMessage, textFromMessage } from "@/lib/anthropic";
 
 export const runtime = "nodejs";
 
@@ -22,8 +22,7 @@ export async function POST(req: Request) {
 
   try {
     const anthropic = getAnthropic();
-    const message = await anthropic.messages.create({
-      model: ANTHROPIC_MODEL,
+    const message = await createMessage(anthropic, {
       max_tokens: 2000,
       system:
         "Ты — редактор в духе сервиса «Главред». Очисти текст от словесного мусора, штампов и канцелярита, убери лишние слова, но полностью сохрани смысл и факты. Исправь орфографические и пунктуационные ошибки. Сохраняй структуру абзацев (разделяй их пустой строкой) и язык оригинала. Верни ТОЛЬКО готовый текст без пояснений.",

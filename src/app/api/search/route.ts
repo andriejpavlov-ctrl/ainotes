@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getAnthropic, ANTHROPIC_MODEL, textFromMessage } from "@/lib/anthropic";
+import { getAnthropic, createMessage, textFromMessage } from "@/lib/anthropic";
 
 export const runtime = "nodejs";
 
@@ -60,8 +60,7 @@ export async function POST(req: Request) {
   let raw = "";
   try {
     const anthropic = getAnthropic();
-    const message = await anthropic.messages.create({
-      model: ANTHROPIC_MODEL,
+    const message = await createMessage(anthropic, {
       max_tokens: 700,
       system:
         "Ты — помощник по поиску в личных заметках. По запросу пользователя найди релевантные заметки из списка и дай короткую сводку-ответ (2–4 предложения) на русском языке, опираясь только на содержимое заметок. Если ничего не подходит — честно скажи об этом. Отвечай строго в формате JSON.",
