@@ -50,6 +50,9 @@ interface State {
 const supabase = createClient();
 
 // Связывает теги с заметками через note_tags.
+// Возвращает ok=false при ошибке запроса заметок, чтобы вызывающий
+// мог не затирать уже загруженные данные (иначе при сбое токена
+// список «пропадал» и показывалось «Заметок нет»).
 async function fetchAll(userId: string) {
   const [notesRes, tagsRes, ntRes, remRes] = await Promise.all([
     supabase.from("notes").select("*").eq("user_id", userId),
@@ -57,6 +60,11 @@ async function fetchAll(userId: string) {
     supabase.from("note_tags").select("note_id, tag_id"),
     supabase.from("reminders").select("*").eq("user_id", userId).order("remind_at"),
   ]);
+
+  if (notesRes.error) {
+    console.error("Ошибка загрузки заметок:", notesRes.error);
+    return { ok: false as const, notes: [], tags: [], reminders: [] };
+  }
 
   const tags = (tagsRes.data ?? []) as Tag[];
   const tagById = new Map(tags.map((t) => [t.id, t]));
@@ -74,7 +82,7 @@ async function fetchAll(userId: string) {
     tags: tagsByNote.get(n.id) ?? [],
   }));
 
-  return { notes, tags, reminders: (remRes.data ?? []) as Reminder[] };
+  return { ok: true as const, notes, tags, reminders: (remRes.data ?? []) as Reminder[] };
 }
 
 let realtimeBound = false;
@@ -92,8 +100,8 @@ export const useStore = create<State>((set, get) => ({
   init: async (userId) => {
     set({ userId, loading: true });
     try {
-      const data = await fetchAll(userId);
-      set({ ...data });
+      const { ok, notes, tags, reminders } = await fetchAll(userId);
+      if (ok) set({ notes, tags, reminders });
     } catch (e) {
       console.error("Не удалось загрузить данные:", e);
     } finally {
@@ -123,8 +131,9 @@ export const useStore = create<State>((set, get) => ({
   refresh: async () => {
     const { userId } = get();
     if (!userId) return;
-    const data = await fetchAll(userId);
-    set(data);
+    const { ok, notes, tags, reminders } = await fetchAll(userId);
+    // При сбое запроса не затираем уже показанные данные.
+    if (ok) set({ notes, tags, reminders });
   },
 
   select: (id) => set({ selectedId: id }),
@@ -233,7 +242,11 @@ export const useStore = create<State>((set, get) => ({
       .insert({ user_id: userId, name, color })
       .select("*")
       .single();
-    if (error || !data) return null;
+    if (error || !data) {
+      console.error("Не удалось создать тег:", error);
+      // Пробрасываем, чтобы интерфейс показал причину.
+      throw new Error(error?.message || "Не удалось создать тег");
+    }
     const tag = data as Tag;
     set((s) => ({ tags: [...s.tags, tag].sort((a, b) => a.name.localeCompare(b.name)) }));
     return tag;

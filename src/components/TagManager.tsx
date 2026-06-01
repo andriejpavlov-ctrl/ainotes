@@ -17,13 +17,22 @@ export default function TagManager() {
   const [name, setName] = useState("");
   const [color, setColor] = useState(TAG_COLORS[2]);
 
+  const [saving, setSaving] = useState(false);
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed) return;
-    await createTag(trimmed, color);
-    setName("");
-    setAdding(false);
+    if (!trimmed || saving) return;
+    setSaving(true);
+    try {
+      await createTag(trimmed, color);
+      setName("");
+      setAdding(false);
+    } catch (err) {
+      alert("Не удалось создать тег: " + (err instanceof Error ? err.message : ""));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -65,8 +74,8 @@ export default function TagManager() {
               />
             ))}
           </div>
-          <button type="submit" className="w-full rounded bg-[var(--accent)] py-1 text-sm font-medium text-black">
-            Создать
+          <button type="submit" disabled={saving} className="w-full rounded bg-[var(--accent)] py-1 text-sm font-medium text-black disabled:opacity-60">
+            {saving ? "Создаём…" : "Создать"}
           </button>
         </form>
       )}
