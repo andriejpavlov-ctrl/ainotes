@@ -95,7 +95,7 @@ export default function Sidebar({ onNavigate }: { onNavigate: () => void }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
-        <span className="text-lg font-bold">AI Notes</span>
+        <span className="text-lg font-bold">эйай ноутс</span>
         <button onClick={handleNew} className="rounded-lg bg-[var(--accent)] p-2 text-black hover:brightness-105" aria-label="Новая заметка">
           <Plus size={18} />
         </button>

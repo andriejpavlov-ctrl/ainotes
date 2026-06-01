@@ -81,7 +81,7 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
           >
             <Menu size={20} />
           </button>
-          <span className="font-semibold">AI Notes</span>
+          <span className="font-semibold">эйай ноутс</span>
         </div>
         <NoteList />
       </div>
