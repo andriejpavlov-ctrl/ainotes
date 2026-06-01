@@ -136,13 +136,15 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      const data = await res.json();
-      if (data.result && window.confirm("Заменить заметку сокращённой версией?\n\n" + data.result)) {
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.result) {
+        alert("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
+      } else if (window.confirm("Заменить заметку сокращённой версией?\n\n" + data.result)) {
         editor.chain().focus().setContent(textToDoc(data.result) as never, true).run();
         scheduleSave();
       }
-    } catch {
-      alert("Не удалось сократить заметку.");
+    } catch (e) {
+      alert("Не удалось связаться с сервером: " + (e instanceof Error ? e.message : ""));
     } finally {
       setShortening(false);
     }

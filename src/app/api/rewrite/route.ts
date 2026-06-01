@@ -38,19 +38,23 @@ export async function POST(req: Request) {
   const task =
     act === "custom" && instruction ? instruction : PROMPTS[act];
 
-  const anthropic = getAnthropic();
-  const message = await anthropic.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: 1500,
-    system:
-      "Ты — редактор текста. Выполняй задание над присланным фрагментом и возвращай ТОЛЬКО переработанный текст без пояснений, кавычек и Markdown-обёрток. Сохраняй язык оригинала.",
-    messages: [
-      {
-        role: "user",
-        content: `Задание: ${task}\n\nТекст:\n${text}`,
-      },
-    ],
-  });
-
-  return NextResponse.json({ result: textFromMessage(message) });
+  try {
+    const anthropic = getAnthropic();
+    const message = await anthropic.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 1500,
+      system:
+        "Ты — редактор текста. Выполняй задание над присланным фрагментом и возвращай ТОЛЬКО переработанный текст без пояснений, кавычек и Markdown-обёрток. Сохраняй язык оригинала.",
+      messages: [
+        {
+          role: "user",
+          content: `Задание: ${task}\n\nТекст:\n${text}`,
+        },
+      ],
+    });
+    return NextResponse.json({ result: textFromMessage(message) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Неизвестная ошибка ИИ";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

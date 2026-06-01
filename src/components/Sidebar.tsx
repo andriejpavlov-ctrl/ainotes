@@ -46,11 +46,15 @@ export default function Sidebar({ onNavigate }: { onNavigate: () => void }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
       });
-      const data = await res.json();
-      setSummary(data.summary ?? "");
-      setResults(data.relevant_ids ?? []);
-    } catch {
-      setSummary("Не удалось выполнить поиск.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSummary("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
+      } else {
+        setSummary(data.summary ?? "");
+        setResults(data.relevant_ids ?? []);
+      }
+    } catch (e) {
+      setSummary("Не удалось связаться с сервером: " + (e instanceof Error ? e.message : ""));
     } finally {
       setSearching(false);
     }

@@ -57,21 +57,27 @@ export async function POST(req: Request) {
     )
     .join("\n\n");
 
-  const anthropic = getAnthropic();
-  const message = await anthropic.messages.create({
-    model: ANTHROPIC_MODEL,
-    max_tokens: 700,
-    system:
-      "Ты — помощник по поиску в личных заметках. По запросу пользователя найди релевантные заметки из списка и дай короткую сводку-ответ (2–4 предложения) на русском языке, опираясь только на содержимое заметок. Если ничего не подходит — честно скажи об этом. Отвечай строго в формате JSON.",
-    messages: [
-      {
-        role: "user",
-        content: `Запрос: "${query}"\n\nЗаметки:\n${context}\n\nВерни JSON вида {"summary": "...", "relevant_ids": ["id1","id2"]}. В relevant_ids — только id действительно подходящих заметок, по убыванию релевантности (максимум 10).`,
-      },
-    ],
-  });
+  let raw = "";
+  try {
+    const anthropic = getAnthropic();
+    const message = await anthropic.messages.create({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 700,
+      system:
+        "Ты — помощник по поиску в личных заметках. По запросу пользователя найди релевантные заметки из списка и дай короткую сводку-ответ (2–4 предложения) на русском языке, опираясь только на содержимое заметок. Если ничего не подходит — честно скажи об этом. Отвечай строго в формате JSON.",
+      messages: [
+        {
+          role: "user",
+          content: `Запрос: "${query}"\n\nЗаметки:\n${context}\n\nВерни JSON вида {"summary": "...", "relevant_ids": ["id1","id2"]}. В relevant_ids — только id действительно подходящих заметок, по убыванию релевантности (максимум 10).`,
+        },
+      ],
+    });
+    raw = textFromMessage(message);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Неизвестная ошибка ИИ";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 
-  const raw = textFromMessage(message);
   let parsed: { summary: string; relevant_ids: string[] } = {
     summary: raw,
     relevant_ids: [],

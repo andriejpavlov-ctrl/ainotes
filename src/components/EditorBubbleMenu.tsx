@@ -36,14 +36,14 @@ export default function EditorBubbleMenu({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text, action, instruction }),
       });
-      const data = await res.json();
-      if (data.result) {
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.result) {
         editor.chain().focus().insertContentAt({ from, to }, data.result).run();
       } else {
-        alert(data.error || "Не удалось обработать текст.");
+        alert("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
       }
-    } catch {
-      alert("Ошибка обращения к ИИ.");
+    } catch (e) {
+      alert("Не удалось связаться с сервером: " + (e instanceof Error ? e.message : ""));
     } finally {
       setBusy(false);
     }

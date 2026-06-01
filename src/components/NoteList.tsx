@@ -21,6 +21,7 @@ export default function NoteList() {
   const deletePermanent = useStore((s) => s.deletePermanent);
   const emptyArchive = useStore((s) => s.emptyArchive);
   const togglePin = useStore((s) => s.togglePin);
+  const softDelete = useStore((s) => s.softDelete);
 
   const [confirmEmpty, setConfirmEmpty] = useState(false);
 
@@ -86,11 +87,16 @@ export default function NoteList() {
                   )}
                   {n.title || "Без названия"}
                 </h3>
-                <div className="flex shrink-0 items-center gap-1 opacity-0 transition group-hover:opacity-100">
+                <div className="flex shrink-0 items-center gap-1 opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
                   {view === "active" ? (
-                    <button onClick={(e) => { e.stopPropagation(); togglePin(n.id); }} aria-label="Закрепить" className="rounded p-1 hover:bg-black/10">
-                      <Pin size={14} className={n.is_pinned ? "fill-[var(--accent)] text-[var(--accent)]" : ""} />
-                    </button>
+                    <>
+                      <button onClick={(e) => { e.stopPropagation(); togglePin(n.id); }} aria-label="Закрепить" className="rounded p-1 hover:bg-black/10">
+                        <Pin size={14} className={n.is_pinned ? "fill-[var(--accent)] text-[var(--accent)]" : ""} />
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); softDelete(n.id); }} aria-label="В архив" className="rounded p-1 hover:bg-black/10">
+                        <Trash2 size={14} className="text-[var(--muted)] hover:text-red-500" />
+                      </button>
+                    </>
                   ) : (
                     <>
                       <button onClick={(e) => { e.stopPropagation(); restore(n.id); }} aria-label="Восстановить" className="rounded p-1 hover:bg-black/10">

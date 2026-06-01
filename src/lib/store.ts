@@ -128,15 +128,35 @@ export const useStore = create<State>((set, get) => ({
   createNote: async () => {
     const { userId } = get();
     if (!userId) return null;
-    const { data, error } = await supabase
+    // Оптимистично: заметка появляется мгновенно, запись в БД — фоном.
+    const id = crypto.randomUUID();
+    const now = new Date().toISOString();
+    const note: Note = {
+      id,
+      user_id: userId,
+      title: "",
+      content: EMPTY_DOC,
+      content_text: "",
+      is_pinned: false,
+      deleted_at: null,
+      created_at: now,
+      updated_at: now,
+      tags: [],
+    };
+    set((s) => ({ notes: [note, ...s.notes], selectedId: id }));
+
+    const { error } = await supabase
       .from("notes")
-      .insert({ user_id: userId, title: "", content: EMPTY_DOC, content_text: "" })
-      .select("*")
-      .single();
-    if (error || !data) return null;
-    const note: Note = { ...(data as Note), tags: [] };
-    set((s) => ({ notes: [note, ...s.notes], selectedId: note.id }));
-    return note.id;
+      .insert({ id, user_id: userId, title: "", content: EMPTY_DOC, content_text: "" });
+    if (error) {
+      // Откат, если вставка не удалась.
+      set((s) => ({
+        notes: s.notes.filter((n) => n.id !== id),
+        selectedId: s.selectedId === id ? null : s.selectedId,
+      }));
+      return null;
+    }
+    return id;
   },
 
   updateNoteContent: async (id, title, content) => {
