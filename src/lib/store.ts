@@ -91,13 +91,25 @@ export const useStore = create<State>((set, get) => ({
 
   init: async (userId) => {
     set({ userId, loading: true });
-    const data = await fetchAll(userId);
-    set({ ...data, loading: false });
+    try {
+      const data = await fetchAll(userId);
+      set({ ...data });
+    } catch (e) {
+      console.error("Не удалось загрузить данные:", e);
+    } finally {
+      // Снимаем «Загрузку» в любом случае, чтобы интерфейс не зависал.
+      set({ loading: false });
+    }
 
     // Realtime-синхронизация между устройствами (требование №3).
+    // Перезагрузку дебаунсим, чтобы частые правки не дёргали refetch.
     if (!realtimeBound) {
       realtimeBound = true;
-      const reload = () => get().refresh();
+      let t: ReturnType<typeof setTimeout> | null = null;
+      const reload = () => {
+        if (t) clearTimeout(t);
+        t = setTimeout(() => get().refresh(), 1200);
+      };
       supabase
         .channel("ai-notes-sync")
         .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, reload)
