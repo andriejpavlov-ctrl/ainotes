@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
-import Sidebar from "./Sidebar";
-import NoteList from "./NoteList";
+import ListColumn from "./ListColumn";
 import NoteEditor from "./NoteEditor";
-import { Menu } from "lucide-react";
 
 export default function NotesApp({ userId }: { userId: string; email: string }) {
   const init = useStore((s) => s.init);
@@ -15,7 +13,6 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
   const notes = useStore((s) => s.notes);
   const setOnline = useStore((s) => s.setOnline);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const firedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -54,7 +51,6 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
           if (typeof Notification !== "undefined" && Notification.permission === "granted") {
             new Notification(`⏰ ${title}`, { body });
           } else {
-            // Фолбэк, если уведомления запрещены.
             alert(`⏰ Напоминание: ${title}\n${body}`);
           }
         }
@@ -65,38 +61,13 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-[var(--bg)]">
-      {/* Боковая панель: на мобильном выезжает поверх. */}
+      {/* Список заметок (на мобильном скрывается, когда открыт редактор). */}
       <div
-        className={`fixed inset-y-0 left-0 z-30 w-72 transform border-r border-[var(--border)] bg-[var(--panel)] transition-transform md:static md:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <Sidebar onNavigate={() => setSidebarOpen(false)} />
-      </div>
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/30 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Список заметок: скрывается на мобильном, когда открыт редактор. */}
-      <div
-        className={`w-full flex-col border-r border-[var(--border)] bg-[var(--panel)] md:flex md:w-80 ${
+        className={`w-full flex-col border-r border-[var(--border)] bg-[var(--panel)] md:flex md:w-96 md:shrink-0 ${
           selectedId ? "hidden md:flex" : "flex"
         }`}
       >
-        <div className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-2 md:hidden">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 hover:bg-black/5"
-            aria-label="Меню"
-          >
-            <Menu size={20} />
-          </button>
-          <span className="font-semibold">эйай ноутс</span>
-        </div>
-        <NoteList />
+        <ListColumn />
       </div>
 
       {/* Редактор. */}
