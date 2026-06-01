@@ -7,6 +7,7 @@ import { genId } from "@/lib/id";
 import { EMPTY_DOC, type JSONContent, type Note, type Reminder, type Tag } from "@/lib/types";
 
 type View = "active" | "archive";
+export type SyncStatus = "synced" | "saving" | "error";
 
 interface State {
   userId: string | null;
@@ -17,9 +18,12 @@ interface State {
   view: View;
   activeTagFilter: string[]; // id тегов для фильтрации
   loading: boolean;
+  syncStatus: SyncStatus; // состояние синхронизации с БД
+  online: boolean; // есть ли сеть
 
   init: (userId: string) => Promise<void>;
   refresh: () => Promise<void>;
+  setOnline: (v: boolean) => void;
   select: (id: string | null) => void;
   setView: (v: View) => void;
   toggleTagFilter: (tagId: string) => void;
@@ -88,6 +92,27 @@ async function fetchAll(userId: string) {
 
 let realtimeBound = false;
 
+// Счётчик незавершённых записей в БД для индикатора синхронизации.
+let pendingWrites = 0;
+
+// Оборачивает запись в Supabase, обновляя статус синхронизации.
+async function track<T extends { error?: unknown }>(p: PromiseLike<T>): Promise<T> {
+  pendingWrites++;
+  useStore.setState({ syncStatus: "saving" });
+  try {
+    const res = await p;
+    pendingWrites = Math.max(0, pendingWrites - 1);
+    useStore.setState({
+      syncStatus: res?.error ? "error" : pendingWrites > 0 ? "saving" : "synced",
+    });
+    return res;
+  } catch (e) {
+    pendingWrites = Math.max(0, pendingWrites - 1);
+    useStore.setState({ syncStatus: "error" });
+    throw e;
+  }
+}
+
 export const useStore = create<State>((set, get) => ({
   userId: null,
   notes: [],
@@ -97,6 +122,8 @@ export const useStore = create<State>((set, get) => ({
   view: "active",
   activeTagFilter: [],
   loading: true,
+  syncStatus: "synced",
+  online: true,
 
   init: async (userId) => {
     set({ userId, loading: true });
@@ -137,6 +164,7 @@ export const useStore = create<State>((set, get) => ({
     if (ok) set({ notes, tags, reminders });
   },
 
+  setOnline: (v) => set({ online: v }),
   select: (id) => set({ selectedId: id }),
   setView: (v) => set({ view: v, selectedId: null }),
   toggleTagFilter: (tagId) =>
@@ -167,9 +195,11 @@ export const useStore = create<State>((set, get) => ({
     };
     set((s) => ({ notes: [note, ...s.notes], selectedId: id }));
 
-    const { error } = await supabase
-      .from("notes")
-      .insert({ id, user_id: userId, title: "", content: EMPTY_DOC, content_text: "" });
+    const { error } = await track(
+      supabase
+        .from("notes")
+        .insert({ id, user_id: userId, title: "", content: EMPTY_DOC, content_text: "" }),
+    );
     if (error) {
       // Откат, если вставка не удалась.
       set((s) => ({
@@ -190,7 +220,7 @@ export const useStore = create<State>((set, get) => ({
           : n,
       ),
     }));
-    await supabase.from("notes").update({ title, content, content_text }).eq("id", id);
+    await track(supabase.from("notes").update({ title, content, content_text }).eq("id", id));
   },
 
   togglePin: async (id) => {
@@ -200,7 +230,7 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({
       notes: s.notes.map((n) => (n.id === id ? { ...n, is_pinned } : n)),
     }));
-    await supabase.from("notes").update({ is_pinned }).eq("id", id);
+    await track(supabase.from("notes").update({ is_pinned }).eq("id", id));
   },
 
   softDelete: async (id) => {
@@ -210,14 +240,14 @@ export const useStore = create<State>((set, get) => ({
       ),
       selectedId: s.selectedId === id ? null : s.selectedId,
     }));
-    await supabase.from("notes").update({ deleted_at: new Date().toISOString() }).eq("id", id);
+    await track(supabase.from("notes").update({ deleted_at: new Date().toISOString() }).eq("id", id));
   },
 
   restore: async (id) => {
     set((s) => ({
       notes: s.notes.map((n) => (n.id === id ? { ...n, deleted_at: null } : n)),
     }));
-    await supabase.from("notes").update({ deleted_at: null }).eq("id", id);
+    await track(supabase.from("notes").update({ deleted_at: null }).eq("id", id));
   },
 
   deletePermanent: async (id) => {
@@ -225,14 +255,14 @@ export const useStore = create<State>((set, get) => ({
       notes: s.notes.filter((n) => n.id !== id),
       selectedId: s.selectedId === id ? null : s.selectedId,
     }));
-    await supabase.from("notes").delete().eq("id", id);
+    await track(supabase.from("notes").delete().eq("id", id));
   },
 
   emptyArchive: async () => {
     const ids = get().notes.filter((n) => n.deleted_at).map((n) => n.id);
     if (ids.length === 0) return;
     set((s) => ({ notes: s.notes.filter((n) => !n.deleted_at), selectedId: null }));
-    await supabase.from("notes").delete().in("id", ids);
+    await track(supabase.from("notes").delete().in("id", ids));
   },
 
   createTag: async (name, color) => {
@@ -249,7 +279,7 @@ export const useStore = create<State>((set, get) => ({
     };
     set((s) => ({ tags: [...s.tags, tag].sort((a, b) => a.name.localeCompare(b.name)) }));
 
-    const { error } = await supabase.from("tags").insert({ id, user_id: userId, name, color });
+    const { error } = await track(supabase.from("tags").insert({ id, user_id: userId, name, color }));
     if (error) {
       // Откат оптимистичного тега.
       set((s) => ({ tags: s.tags.filter((t) => t.id !== id) }));
@@ -273,7 +303,7 @@ export const useStore = create<State>((set, get) => ({
         tags: (n.tags ?? []).filter((t) => t.id !== id),
       })),
     }));
-    await supabase.from("tags").delete().eq("id", id);
+    await track(supabase.from("tags").delete().eq("id", id));
   },
 
   assignTag: async (noteId, tagId) => {
@@ -286,7 +316,7 @@ export const useStore = create<State>((set, get) => ({
           : n,
       ),
     }));
-    await supabase.from("note_tags").insert({ note_id: noteId, tag_id: tagId });
+    await track(supabase.from("note_tags").insert({ note_id: noteId, tag_id: tagId }));
   },
 
   unassignTag: async (noteId, tagId) => {
@@ -297,23 +327,25 @@ export const useStore = create<State>((set, get) => ({
           : n,
       ),
     }));
-    await supabase.from("note_tags").delete().eq("note_id", noteId).eq("tag_id", tagId);
+    await track(supabase.from("note_tags").delete().eq("note_id", noteId).eq("tag_id", tagId));
   },
 
   createReminder: async (noteId, remindAt, label, anchorText) => {
     const { userId } = get();
     if (!userId) return;
-    const { data } = await supabase
-      .from("reminders")
-      .insert({
-        user_id: userId,
-        note_id: noteId,
-        remind_at: remindAt,
-        label,
-        anchor_text: anchorText,
-      })
-      .select("*")
-      .single();
+    const { data } = await track(
+      supabase
+        .from("reminders")
+        .insert({
+          user_id: userId,
+          note_id: noteId,
+          remind_at: remindAt,
+          label,
+          anchor_text: anchorText,
+        })
+        .select("*")
+        .single(),
+    );
     if (data) set((s) => ({ reminders: [...s.reminders, data as Reminder] }));
   },
 
@@ -324,11 +356,11 @@ export const useStore = create<State>((set, get) => ({
     set((s) => ({
       reminders: s.reminders.map((x) => (x.id === id ? { ...x, done } : x)),
     }));
-    await supabase.from("reminders").update({ done }).eq("id", id);
+    await track(supabase.from("reminders").update({ done }).eq("id", id));
   },
 
   deleteReminder: async (id) => {
     set((s) => ({ reminders: s.reminders.filter((x) => x.id !== id) }));
-    await supabase.from("reminders").delete().eq("id", id);
+    await track(supabase.from("reminders").delete().eq("id", id));
   },
 }));

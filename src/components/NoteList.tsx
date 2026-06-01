@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Pin, Trash2, RotateCcw, X } from "lucide-react";
+import { Pin, Trash2, RotateCcw, X, Search, Sparkles, Tag as TagIcon } from "lucide-react";
 import type { Note } from "@/lib/types";
+import TagPanel from "./TagPanel";
 
 function snippet(n: Note): string {
   return (n.content_text || "").replace(/\s+/g, " ").trim().slice(0, 90);
@@ -14,6 +15,7 @@ function snippet(n: Note): string {
 export default function NoteList() {
   const notes = useStore((s) => s.notes);
   const view = useStore((s) => s.view);
+  const setView = useStore((s) => s.setView);
   const selectedId = useStore((s) => s.selectedId);
   const select = useStore((s) => s.select);
   const activeTagFilter = useStore((s) => s.activeTagFilter);
@@ -24,30 +26,152 @@ export default function NoteList() {
   const softDelete = useStore((s) => s.softDelete);
 
   const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [tagPanelOpen, setTagPanelOpen] = useState(false);
+
+  // ИИ-поиск (требование №4) — теперь в области списка.
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [results, setResults] = useState<string[]>([]);
+
+  async function runSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!query.trim()) return;
+    setSearching(true);
+    setSummary(null);
+    setResults([]);
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setSummary("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
+      } else {
+        setSummary(data.summary ?? "");
+        setResults(data.relevant_ids ?? []);
+      }
+    } catch (err) {
+      setSummary("Не удалось связаться с сервером: " + (err instanceof Error ? err.message : ""));
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function clearSearch() {
+    setQuery("");
+    setSummary(null);
+    setResults([]);
+  }
 
   const list = useMemo(() => {
-    let arr = notes.filter((n) =>
-      view === "archive" ? n.deleted_at : !n.deleted_at,
-    );
+    let arr = notes.filter((n) => (view === "archive" ? n.deleted_at : !n.deleted_at));
     if (view === "active" && activeTagFilter.length > 0) {
       arr = arr.filter((n) =>
         activeTagFilter.every((tid) => (n.tags ?? []).some((t) => t.id === tid)),
       );
     }
-    // Закреплённые сверху, затем по дате изменения (новые выше).
     return arr.sort((a, b) => {
-      if (view === "active" && a.is_pinned !== b.is_pinned) {
-        return a.is_pinned ? -1 : 1;
-      }
+      if (view === "active" && a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
   }, [notes, view, activeTagFilter]);
 
+  const resultNotes = results
+    .map((id) => notes.find((n) => n.id === id))
+    .filter(Boolean) as Note[];
+
   return (
     <div className="flex h-full flex-col">
+      {/* Шапка списка: поиск + переключатель + теги */}
+      <div className="border-b border-[var(--border)] px-3 py-2">
+        <form onSubmit={runSearch} className="relative mb-2">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ИИ-поиск по заметкам…"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] py-2 pl-9 pr-16 text-sm outline-none focus:border-[var(--accent)]"
+          />
+          {query && (
+            <button type="button" onClick={clearSearch} className="absolute right-9 top-1/2 -translate-y-1/2 text-[var(--muted)]" aria-label="Очистить">
+              <X size={15} />
+            </button>
+          )}
+          <button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--accent)]" aria-label="Искать">
+            <Sparkles size={16} />
+          </button>
+        </form>
+
+        <div className="flex items-center justify-between">
+          {/* Тонкий переключатель Заметки/Архив */}
+          <div className="flex items-center gap-3 text-sm">
+            <button
+              onClick={() => setView("active")}
+              className={view === "active" ? "font-semibold text-[var(--text)]" : "text-[var(--muted)] hover:text-[var(--text)]"}
+            >
+              Заметки
+            </button>
+            <button
+              onClick={() => setView("archive")}
+              className={view === "archive" ? "font-semibold text-[var(--text)]" : "text-[var(--muted)] hover:text-[var(--text)]"}
+            >
+              Архив
+            </button>
+          </div>
+
+          <button
+            onClick={() => setTagPanelOpen(true)}
+            className={`flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition hover:bg-black/5 ${
+              activeTagFilter.length > 0 ? "text-[var(--accent)]" : "text-[var(--muted)]"
+            }`}
+          >
+            <TagIcon size={14} /> Теги
+            {activeTagFilter.length > 0 && (
+              <span className="ml-0.5 rounded-full bg-[var(--accent)] px-1.5 text-[10px] font-semibold text-black">
+                {activeTagFilter.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ИИ-сводка */}
+      {(searching || summary !== null) && (
+        <div className="border-b border-[var(--border)] bg-accent-soft px-3 py-2">
+          {searching ? (
+            <p className="text-sm text-[var(--muted)]">ИИ ищет…</p>
+          ) : (
+            <div className="text-sm">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="flex items-center gap-1 font-medium text-[var(--accent)]">
+                  <Sparkles size={14} /> ИИ-сводка
+                </span>
+                <button onClick={() => { setSummary(null); setResults([]); }} aria-label="Закрыть">
+                  <X size={14} className="text-[var(--muted)]" />
+                </button>
+              </div>
+              <p className="leading-relaxed">{summary}</p>
+              {resultNotes.length > 0 && (
+                <div className="mt-2 space-y-1 border-t border-black/5 pt-2">
+                  {resultNotes.map((n) => (
+                    <button key={n.id} onClick={() => { setView("active"); select(n.id); }} className="block w-full truncate rounded px-2 py-1 text-left hover:bg-black/5">
+                      📄 {n.title || "Без названия"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Заголовок архива с «Удалить всё» */}
       {view === "archive" && (
         <div className="flex items-center justify-between border-b border-[var(--border)] px-3 py-2 text-sm">
-          <span className="font-medium">Архив</span>
+          <span className="text-[var(--muted)]">В архиве: {list.length}</span>
           {list.length > 0 &&
             (confirmEmpty ? (
               <span className="flex items-center gap-2">
@@ -69,7 +193,7 @@ export default function NoteList() {
       <div className="flex-1 overflow-y-auto">
         {list.length === 0 ? (
           <p className="p-6 text-center text-sm text-[var(--muted)]">
-            {view === "archive" ? "Архив пуст" : "Заметок нет"}
+            {view === "archive" ? "Архив пуст" : activeTagFilter.length > 0 ? "Нет заметок с этими тегами" : "Заметок нет"}
           </p>
         ) : (
           list.map((n) => (
@@ -110,9 +234,7 @@ export default function NoteList() {
                 </div>
               </div>
 
-              <p className="mt-0.5 truncate text-sm text-[var(--muted)]">
-                {snippet(n) || "Нет текста"}
-              </p>
+              <p className="mt-0.5 truncate text-sm text-[var(--muted)]">{snippet(n) || "Нет текста"}</p>
 
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-xs text-[var(--muted)]">
@@ -128,6 +250,8 @@ export default function NoteList() {
           ))
         )}
       </div>
+
+      {tagPanelOpen && <TagPanel onClose={() => setTagPanelOpen(false)} />}
     </div>
   );
 }

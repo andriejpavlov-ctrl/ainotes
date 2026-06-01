@@ -13,6 +13,7 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
   const selectedId = useStore((s) => s.selectedId);
   const reminders = useStore((s) => s.reminders);
   const notes = useStore((s) => s.notes);
+  const setOnline = useStore((s) => s.setOnline);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const firedRef = useRef<Set<string>>(new Set());
@@ -20,6 +21,18 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
   useEffect(() => {
     init(userId);
   }, [init, userId]);
+
+  // Отслеживаем наличие сети для индикатора синхронизации.
+  useEffect(() => {
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, [setOnline]);
 
   // Напоминания (требование №8): просим разрешение и проверяем срабатывание.
   useEffect(() => {

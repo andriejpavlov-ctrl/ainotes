@@ -17,10 +17,10 @@ import type { JSONContent } from "@/lib/types";
 import EditorToolbar from "./EditorToolbar";
 import EditorBubbleMenu from "./EditorBubbleMenu";
 import ReminderDialog from "./ReminderDialog";
+import NoteTagBar from "./NoteTagBar";
 import {
   ChevronLeft,
   MoreVertical,
-  Tag as TagIcon,
   Bell,
   Scissors,
   FileDown,
@@ -56,14 +56,10 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   const updateNoteContent = useStore((s) => s.updateNoteContent);
   const softDelete = useStore((s) => s.softDelete);
   const select = useStore((s) => s.select);
-  const tags = useStore((s) => s.tags);
-  const assignTag = useStore((s) => s.assignTag);
-  const unassignTag = useStore((s) => s.unassignTag);
 
   const [title, setTitle] = useState(note?.title ?? "");
   const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [tagOpen, setTagOpen] = useState(false);
   const [reminderFor, setReminderFor] = useState<string | null | undefined>(undefined);
   const [shortening, setShortening] = useState(false);
   const [imageCount, setImageCount] = useState(note ? countImages(note.content) : 0);
@@ -168,8 +164,6 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
     return <div className="flex h-full items-center justify-center text-[var(--muted)]">Загрузка…</div>;
   }
 
-  const noteTagIds = new Set((note.tags ?? []).map((t) => t.id));
-
   return (
     <div className="flex h-full flex-col">
       {/* Шапка */}
@@ -196,7 +190,6 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
               <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
-                <MenuItem icon={<TagIcon size={16} />} label="Теги" onClick={() => { setTagOpen(true); setMenuOpen(false); }} />
                 <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
                 <MenuItem icon={<Scissors size={16} />} label="Сократить (ИИ)" onClick={shortenNote} />
                 <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
@@ -209,48 +202,8 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
         </div>
       </div>
 
-      {/* Теги заметки */}
-      {(note.tags ?? []).length > 0 && (
-        <div className="flex flex-wrap gap-1.5 border-b border-[var(--border)] bg-[var(--panel)] px-4 py-2">
-          {(note.tags ?? []).map((t) => (
-            <span key={t.id} className="flex items-center gap-1 rounded-full px-2 py-0.5 text-xs" style={{ backgroundColor: t.color + "22", color: t.color }}>
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} />
-              {t.name}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Поповер выбора тегов */}
-      {tagOpen && (
-        <div className="fixed inset-0 z-40 flex items-start justify-center bg-black/30 pt-24" onClick={() => setTagOpen(false)}>
-          <div className="w-72 rounded-xl border border-[var(--border)] bg-[var(--panel)] p-3 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h4 className="mb-2 font-medium">Теги заметки</h4>
-            {tags.length === 0 ? (
-              <p className="text-sm text-[var(--muted)]">Создайте теги в боковой панели.</p>
-            ) : (
-              <div className="max-h-64 space-y-0.5 overflow-y-auto">
-                {tags.map((t) => {
-                  const on = noteTagIds.has(t.id);
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => (on ? unassignTag(noteId, t.id) : assignTag(noteId, t.id))}
-                      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-black/5"
-                    >
-                      <span className={`flex h-5 w-5 items-center justify-center rounded border ${on ? "border-[var(--accent)] bg-[var(--accent)] text-black" : "border-[var(--border)]"}`}>
-                        {on && <Check size={12} />}
-                      </span>
-                      <span className="h-3 w-3 rounded-full" style={{ backgroundColor: t.color }} />
-                      <span className="flex-1 truncate text-left">{t.name}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Теги заметки (создание/выбор/цвет — прямо под заголовком) */}
+      <NoteTagBar noteId={noteId} noteTags={note.tags ?? []} />
 
       <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
       <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
