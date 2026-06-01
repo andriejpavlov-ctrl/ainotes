@@ -6,6 +6,7 @@ import { useStore } from "@/lib/store";
 import { createClient } from "@/lib/supabase/client";
 import { buildExtensions } from "@/lib/editor-extensions";
 import { applyNbspToDoc } from "@/lib/typograf";
+import { genId } from "@/lib/id";
 import {
   docToMarkdown,
   docToPlainText,
@@ -110,7 +111,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
       return;
     }
     const supabase = createClient();
-    const path = `${userId}/${noteId}/${crypto.randomUUID()}`;
+    const path = `${userId}/${noteId}/${genId()}`;
     const { error } = await supabase.storage.from("note-images").upload(path, file, {
       contentType: file.type,
       upsert: false,

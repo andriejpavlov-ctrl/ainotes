@@ -3,6 +3,7 @@
 import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
 import { docToPlainText } from "@/lib/markdown";
+import { genId } from "@/lib/id";
 import { EMPTY_DOC, type JSONContent, type Note, type Reminder, type Tag } from "@/lib/types";
 
 type View = "active" | "archive";
@@ -150,7 +151,7 @@ export const useStore = create<State>((set, get) => ({
     const { userId } = get();
     if (!userId) return null;
     // Оптимистично: заметка появляется мгновенно, запись в БД — фоном.
-    const id = crypto.randomUUID();
+    const id = genId();
     const now = new Date().toISOString();
     const note: Note = {
       id,
@@ -238,7 +239,7 @@ export const useStore = create<State>((set, get) => ({
     const { userId } = get();
     if (!userId) return null;
     // Оптимистично: тег появляется сразу, запись в БД — фоном.
-    const id = crypto.randomUUID();
+    const id = genId();
     const tag: Tag = {
       id,
       user_id: userId,
