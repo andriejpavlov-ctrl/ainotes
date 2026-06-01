@@ -35,20 +35,20 @@ export default function ReminderDialog({
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/30 sm:items-center" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-t-2xl bg-[var(--panel)] p-5 shadow-xl sm:rounded-2xl"
+        className="w-full max-w-md rounded-t-lg border border-line bg-surface p-5 shadow-pop sm:rounded-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 font-semibold">
-            <Bell size={18} className="text-[var(--accent)]" /> Напоминания
+          <h3 className="flex items-center gap-2 text-base font-semibold">
+            <Bell size={18} className="text-accent" /> Напоминания
           </h3>
-          <button onClick={onClose} aria-label="Закрыть">
+          <button onClick={onClose} aria-label="Закрыть" className="text-muted hover:text-ink">
             <X size={18} />
           </button>
         </div>
 
         {anchorText && (
-          <p className="mb-3 rounded-lg bg-accent-soft p-2 text-sm">
+          <p className="mb-3 rounded bg-accent-soft p-2.5 text-sm">
             К фрагменту: «{anchorText.slice(0, 120)}»
           </p>
         )}
@@ -58,15 +58,15 @@ export default function ReminderDialog({
             type="datetime-local"
             value={when}
             onChange={(e) => setWhen(e.target.value)}
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 outline-none focus:border-[var(--accent)]"
+            className="h-control w-full rounded border border-line bg-surface px-3 text-sm outline-none focus:border-accent"
           />
           <input
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Текст напоминания (необязательно)"
-            className="w-full rounded-lg border border-[var(--border)] px-3 py-2 outline-none focus:border-[var(--accent)]"
+            className="h-control w-full rounded border border-line bg-surface px-3 text-sm outline-none placeholder:text-muted focus:border-accent"
           />
-          <button type="submit" className="w-full rounded-lg bg-[var(--accent)] py-2 font-medium text-black hover:brightness-105">
+          <button type="submit" className="h-control w-full rounded bg-accent text-sm font-medium text-accent-ink hover:bg-accent-strong">
             Добавить напоминание
           </button>
         </form>
@@ -77,18 +77,18 @@ export default function ReminderDialog({
               .slice()
               .sort((a, b) => new Date(a.remind_at).getTime() - new Date(b.remind_at).getTime())
               .map((r) => (
-                <li key={r.id} className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-black/5">
-                  <button onClick={() => toggleReminderDone(r.id)} aria-label="Отметить" className={`flex h-5 w-5 items-center justify-center rounded border ${r.done ? "border-[var(--accent)] bg-[var(--accent)] text-black" : "border-[var(--border)]"}`}>
-                    {r.done && <Check size={12} />}
+                <li key={r.id} className="flex items-center gap-2.5 rounded px-2 py-1.5 text-sm hover:bg-surface2">
+                  <button onClick={() => toggleReminderDone(r.id)} aria-label="Отметить" className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] border ${r.done ? "border-accent bg-accent text-accent-ink" : "border-line-strong"}`}>
+                    {r.done && <Check size={12} strokeWidth={3} />}
                   </button>
-                  <div className={`flex-1 ${r.done ? "text-[var(--muted)] line-through" : ""}`}>
+                  <div className={`flex-1 ${r.done ? "text-muted line-through" : ""}`}>
                     <div>{r.label || r.anchor_text?.slice(0, 60) || "Напоминание"}</div>
-                    <div className="text-xs text-[var(--muted)]">
+                    <div className="text-xs text-muted">
                       {format(new Date(r.remind_at), "d MMM, HH:mm", { locale: ru })}
                     </div>
                   </div>
-                  <button onClick={() => deleteReminder(r.id)} aria-label="Удалить">
-                    <Trash2 size={14} className="text-[var(--muted)] hover:text-red-500" />
+                  <button onClick={() => deleteReminder(r.id)} aria-label="Удалить" className="text-muted hover:text-danger">
+                    <Trash2 size={14} />
                   </button>
                 </li>
               ))}

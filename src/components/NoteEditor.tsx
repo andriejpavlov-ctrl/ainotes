@@ -18,6 +18,7 @@ import EditorToolbar from "./EditorToolbar";
 import EditorBubbleMenu from "./EditorBubbleMenu";
 import ReminderDialog from "./ReminderDialog";
 import NoteTagBar from "./NoteTagBar";
+import IconButton from "./ui/IconButton";
 import {
   ChevronLeft,
   MoreVertical,
@@ -167,34 +168,34 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   return (
     <div className="flex h-full flex-col">
       {/* Шапка */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)] bg-[var(--panel)] px-2 py-2">
-        <button onClick={() => select(null)} className="rounded-lg p-2 hover:bg-black/5 md:hidden" aria-label="Назад">
+      <div className="flex h-14 items-center gap-1 border-b border-line bg-surface px-2 sm:px-3">
+        <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
           <ChevronLeft size={20} />
-        </button>
+        </IconButton>
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Заголовок"
-          className="flex-1 bg-transparent px-2 text-lg font-semibold outline-none"
+          className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none placeholder:text-muted"
         />
-        <span className="flex w-6 items-center justify-center text-[var(--muted)]">
-          {saving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+        <span className="flex w-5 shrink-0 items-center justify-center text-muted" title={saving ? "Сохранение…" : "Сохранено"}>
+          {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} className="text-success" strokeWidth={2.5} />}
         </span>
 
         {/* Меню действий */}
         <div className="relative">
-          <button onClick={() => setMenuOpen((v) => !v)} className="rounded-lg p-2 hover:bg-black/5" aria-label="Действия">
+          <IconButton onClick={() => setMenuOpen((v) => !v)} aria-label="Действия">
             <MoreVertical size={18} />
-          </button>
+          </IconButton>
           {menuOpen && (
             <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 z-20 mt-1 w-56 rounded-xl border border-[var(--border)] bg-[var(--panel)] py-1 shadow-lg">
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
                 <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
                 <MenuItem icon={<Scissors size={16} />} label="Сократить (ИИ)" onClick={shortenNote} />
                 <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
                 <MenuItem icon={<FileDown size={16} />} label="Экспорт в .txt" onClick={() => exportNote("txt")} />
-                <div className="my-1 h-px bg-[var(--border)]" />
+                <div className="my-1 h-px bg-line" />
                 <MenuItem icon={<Trash2 size={16} />} label="В архив" danger onClick={() => { softDelete(noteId); setMenuOpen(false); }} />
               </div>
             </>
@@ -241,7 +242,7 @@ function MenuItem({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-black/5 ${danger ? "text-red-600" : ""}`}
+      className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-surface2 ${danger ? "text-danger" : "text-ink"}`}
     >
       {icon} {label}
     </button>

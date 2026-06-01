@@ -19,10 +19,35 @@ const config: Config = {
         ],
       },
       colors: {
+        bg: "var(--bg)",
+        surface: "var(--surface)",
+        surface2: "var(--surface-2)",
+        line: "var(--border)",
+        "line-strong": "var(--border-strong)",
+        ink: "var(--ink)",
+        muted: "var(--muted)",
+        danger: "var(--danger)",
+        success: "var(--success)",
         accent: {
-          DEFAULT: "#f0a500",
-          soft: "#fff6df",
+          DEFAULT: "var(--accent)",
+          strong: "var(--accent-strong)",
+          soft: "var(--accent-soft)",
+          ink: "var(--accent-ink)",
         },
+      },
+      borderRadius: {
+        sm: "var(--radius-sm)",
+        DEFAULT: "var(--radius)",
+        lg: "var(--radius-lg)",
+      },
+      height: {
+        control: "var(--control-h)",
+      },
+      minHeight: {
+        control: "var(--control-h)",
+      },
+      boxShadow: {
+        pop: "var(--shadow-pop)",
       },
     },
   },

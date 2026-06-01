@@ -48,8 +48,8 @@ function Btn({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-8 w-8 items-center justify-center rounded-md transition disabled:opacity-30 ${
-        active ? "bg-[var(--accent)] text-black" : "text-[var(--text)] hover:bg-black/10"
+      className={`flex h-8 w-8 items-center justify-center rounded transition-colors disabled:opacity-30 ${
+        active ? "bg-accent text-accent-ink" : "text-ink hover:bg-surface2"
       }`}
     >
       {children}
@@ -57,7 +57,7 @@ function Btn({
   );
 }
 
-const Sep = () => <span className="mx-0.5 h-5 w-px bg-[var(--border)]" />;
+const Sep = () => <span className="mx-1 h-5 w-px bg-line" />;
 
 export default function EditorToolbar({
   editor,
@@ -90,7 +90,7 @@ export default function EditorToolbar({
   const canAddImage = imageCount < 10;
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-[var(--border)] bg-[var(--panel)] px-2 py-1.5">
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-2 py-1.5 sm:px-3">
       {/* Стиль абзаца */}
       <Btn title="Обычный текст" active={editor.isActive("paragraph") && !editor.isActive("heading")} onClick={() => editor.chain().focus().setParagraph().run()}>
         <Pilcrow size={16} />
