@@ -50,9 +50,10 @@ npm install
 4. **Settings → API** скопируйте:
    - `Project URL` → в `NEXT_PUBLIC_SUPABASE_URL`
    - `anon public` ключ → в `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-5. (Авторизация по e-mail включена по умолчанию.) В **Authentication → URL Configuration**
-   добавьте в **Redirect URLs** адрес `http://localhost:3000/auth/callback`
-   (и позже — адрес продакшена, напр. `https://ваш-домен/auth/callback`).
+5. **Authentication → Sign In / Providers → Email**: включите **Enable Email provider**.
+   Для входа по паролю без подтверждения почты — отключите **Confirm email**.
+   (Если оставите вход по ссылке — в **Authentication → URL Configuration → Redirect URLs**
+   добавьте `http://localhost:3000/auth/callback` и адрес продакшена.)
 
 ### 3. Ключ Claude (Anthropic)
 
