@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Pin, Trash2, RotateCcw, X, Search, Sparkles } from "lucide-react";
+import { Pin, Trash2, RotateCcw, X } from "lucide-react";
 import type { Note } from "@/lib/types";
 import IconButton from "./ui/IconButton";
 
@@ -15,7 +15,6 @@ function snippet(n: Note): string {
 export default function NoteList() {
   const notes = useStore((s) => s.notes);
   const view = useStore((s) => s.view);
-  const setView = useStore((s) => s.setView);
   const selectedId = useStore((s) => s.selectedId);
   const select = useStore((s) => s.select);
   const restore = useStore((s) => s.restore);
@@ -26,42 +25,6 @@ export default function NoteList() {
 
   const [confirmEmpty, setConfirmEmpty] = useState(false);
 
-  const [query, setQuery] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [results, setResults] = useState<string[]>([]);
-
-  async function runSearch(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setSearching(true);
-    setSummary(null);
-    setResults([]);
-    try {
-      const res = await fetch("/api/search", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) setSummary("эйай не ответил: " + (data.error || `ошибка ${res.status}`));
-      else {
-        setSummary(data.summary ?? "");
-        setResults(data.relevant_ids ?? []);
-      }
-    } catch (err) {
-      setSummary("Не удалось связаться с сервером: " + (err instanceof Error ? err.message : ""));
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  function clearSearch() {
-    setQuery("");
-    setSummary(null);
-    setResults([]);
-  }
-
   const list = useMemo(() => {
     const arr = notes.filter((n) => (view === "archive" ? n.deleted_at : !n.deleted_at));
     return arr.sort((a, b) => {
@@ -70,61 +33,8 @@ export default function NoteList() {
     });
   }, [notes, view]);
 
-  const resultNotes = results.map((id) => notes.find((n) => n.id === id)).filter(Boolean) as Note[];
-
   return (
     <div className="flex h-full flex-col">
-      {/* Шапка: поиск */}
-      <div className="border-b border-line px-4 py-3">
-        <form onSubmit={runSearch} className="relative">
-          <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="эйай поиск по заметкам"
-            className="h-control w-full rounded border border-line bg-bg pl-9 pr-16 text-sm outline-none placeholder:text-muted focus:border-accent"
-          />
-          {query && (
-            <button type="button" onClick={clearSearch} className="absolute right-9 top-1/2 -translate-y-1/2 text-muted hover:text-ink" aria-label="Очистить">
-              <X size={15} />
-            </button>
-          )}
-          <button type="submit" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-accent hover:text-accent-strong" aria-label="Искать">
-            <Sparkles size={16} />
-          </button>
-        </form>
-      </div>
-
-      {/* эйай-сводка */}
-      {(searching || summary !== null) && (
-        <div className="border-b border-line bg-accent-soft px-4 py-3">
-          {searching ? (
-            <p className="text-sm text-muted">эйай ищет…</p>
-          ) : (
-            <div className="text-sm">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="flex items-center gap-1.5 font-medium text-accent-strong">
-                  <Sparkles size={14} /> эйай-сводка
-                </span>
-                <button onClick={() => { setSummary(null); setResults([]); }} aria-label="Закрыть" className="text-muted hover:text-ink">
-                  <X size={14} />
-                </button>
-              </div>
-              <p className="leading-relaxed text-ink">{summary}</p>
-              {resultNotes.length > 0 && (
-                <div className="mt-2 space-y-0.5 border-t border-black/5 pt-2">
-                  {resultNotes.map((n) => (
-                    <button key={n.id} onClick={() => { setView("active"); select(n.id); }} className="block w-full truncate rounded px-2 py-1 text-left hover:bg-black/5">
-                      📄 {n.title || "Без названия"}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Заголовок архива */}
       {view === "archive" && (
         <div className="flex h-11 items-center justify-between border-b border-line px-4 text-sm">

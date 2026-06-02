@@ -7,7 +7,7 @@ import NoteList from "./NoteList";
 import SyncStatus from "./SyncStatus";
 import Button from "./ui/Button";
 import IconButton from "./ui/IconButton";
-import { Plus, Download, LogOut, Archive, FileEdit } from "lucide-react";
+import { Plus, Download, LogOut, Archive, FileEdit, Search } from "lucide-react";
 
 // Левый столбец: шапка, список, низ (архив, синхронизация, экспорт, выход).
 export default function ListColumn() {
@@ -15,6 +15,7 @@ export default function ListColumn() {
   const notes = useStore((s) => s.notes);
   const view = useStore((s) => s.view);
   const setView = useStore((s) => s.setView);
+  const setSearchOpen = useStore((s) => s.setSearchOpen);
 
   function exportAll(format: "md" | "txt") {
     const active = notes.filter((n) => !n.deleted_at);
@@ -36,11 +37,16 @@ export default function ListColumn() {
   return (
     <div className="flex h-full flex-col">
       {/* Шапка */}
-      <header className="flex h-14 items-center justify-between border-b border-line px-4">
+      <header className="flex h-14 items-center justify-between gap-2 border-b border-line px-4">
         <span className="text-[17px] font-bold tracking-tight">эйай ноутс</span>
-        <Button size="sm" variant="primary" onClick={() => createNote()}>
-          <Plus size={16} /> Новая
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <IconButton size="sm" variant="outline" onClick={() => setSearchOpen(true)} title="Поиск (⌘K / Ctrl+K)" aria-label="Поиск">
+            <Search size={16} />
+          </IconButton>
+          <Button size="sm" variant="primary" onClick={() => createNote()}>
+            <Plus size={16} /> Новая
+          </Button>
+        </div>
       </header>
 
       {/* Список */}

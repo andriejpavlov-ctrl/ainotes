@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useStore } from "@/lib/store";
 import ListColumn from "./ListColumn";
 import NoteEditor from "./NoteEditor";
+import SearchOverlay from "./SearchOverlay";
 
 export default function NotesApp({ userId }: { userId: string; email: string }) {
   const init = useStore((s) => s.init);
@@ -12,12 +13,25 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
   const reminders = useStore((s) => s.reminders);
   const notes = useStore((s) => s.notes);
   const setOnline = useStore((s) => s.setOnline);
+  const setSearchOpen = useStore((s) => s.setSearchOpen);
 
   const firedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     init(userId);
   }, [init, userId]);
+
+  // Горячая клавиша ⌘K / Ctrl+K — открыть поиск.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [setSearchOpen]);
 
   // Отслеживаем наличие сети для индикатора синхронизации.
   useEffect(() => {
@@ -85,6 +99,8 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
           </div>
         )}
       </div>
+
+      <SearchOverlay />
     </div>
   );
 }

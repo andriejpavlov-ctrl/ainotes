@@ -18,10 +18,12 @@ interface State {
   loading: boolean;
   syncStatus: SyncStatus;
   online: boolean;
+  searchOpen: boolean;
 
   init: (userId: string) => Promise<void>;
   refresh: () => Promise<void>;
   setOnline: (v: boolean) => void;
+  setSearchOpen: (v: boolean) => void;
   select: (id: string | null) => void;
   setView: (v: View) => void;
 
@@ -96,6 +98,7 @@ export const useStore = create<State>((set, get) => ({
   loading: true,
   syncStatus: "synced",
   online: true,
+  searchOpen: false,
 
   init: async (userId) => {
     set({ userId, loading: true });
@@ -131,6 +134,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   setOnline: (v) => set({ online: v }),
+  setSearchOpen: (v) => set({ searchOpen: v }),
   select: (id) => set({ selectedId: id }),
   setView: (v) => set({ view: v, selectedId: null }),
 
