@@ -14,12 +14,27 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
   const notes = useStore((s) => s.notes);
   const setOnline = useStore((s) => s.setOnline);
   const setSearchOpen = useStore((s) => s.setSearchOpen);
+  const refresh = useStore((s) => s.refresh);
 
   const firedRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     init(userId);
   }, [init, userId]);
+
+  // Обновляем данные, когда вкладка снова становится активной
+  // (возврат из фона / восстановление страницы из кэша на мобильном).
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [refresh]);
 
   // Горячая клавиша ⌘K / Ctrl+K — открыть поиск.
   useEffect(() => {

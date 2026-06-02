@@ -104,6 +104,9 @@ export const useStore = create<State>((set, get) => ({
   init: async (userId) => {
     set({ userId, loading: true });
     try {
+      // Дожидаемся, пока клиент восстановит сессию из хранилища,
+      // иначе первый запрос может уйти без токена и вернуть пусто.
+      await supabase.auth.getSession();
       const { ok, notes, reminders } = await fetchAll(userId);
       if (ok) set({ notes, reminders });
     } catch (e) {
@@ -112,8 +115,18 @@ export const useStore = create<State>((set, get) => ({
       set({ loading: false });
     }
 
+    // Если данные пришли пустыми — возможна гонка с авторизацией; повторяем.
+    if (get().notes.length === 0) {
+      setTimeout(() => {
+        if (get().notes.length === 0) get().refresh();
+      }, 1200);
+    }
+
     if (!realtimeBound) {
       realtimeBound = true;
+      // Перезагружаем данные при изменении сессии (вход/обновление токена).
+      supabase.auth.onAuthStateChange(() => get().refresh());
+
       let t: ReturnType<typeof setTimeout> | null = null;
       const reload = () => {
         if (t) clearTimeout(t);
