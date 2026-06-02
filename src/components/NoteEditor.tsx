@@ -167,7 +167,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   return (
     <div className="flex h-full flex-col">
       {/* Шапка: заголовок + теги в одну строку */}
-      <div className="flex h-14 items-center gap-2 border-b border-line bg-surface px-2 sm:px-3">
+      <div className="flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
         <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
           <ChevronLeft size={20} />
         </IconButton>

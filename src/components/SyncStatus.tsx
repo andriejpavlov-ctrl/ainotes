@@ -31,7 +31,7 @@ export default function SyncStatus() {
   }
 
   return (
-    <div className={`flex h-8 items-center gap-2 px-1 text-xs ${color}`} title="Состояние синхронизации с облаком">
+    <div className={`flex h-6 items-center gap-2 text-xs ${color}`} title="Состояние синхронизации с облаком">
       {icon}
       <span className="truncate">{text}</span>
     </div>

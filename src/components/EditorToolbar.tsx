@@ -90,7 +90,7 @@ export default function EditorToolbar({
   const canAddImage = imageCount < 10;
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-2 py-1.5 sm:px-3">
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-3 py-2 sm:px-4">
       {/* Стиль абзаца */}
       <Btn title="Обычный текст" active={editor.isActive("paragraph") && !editor.isActive("heading")} onClick={() => editor.chain().focus().setParagraph().run()}>
         <Pilcrow size={16} />

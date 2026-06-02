@@ -75,7 +75,7 @@ export default function NoteList() {
   return (
     <div className="flex h-full flex-col">
       {/* Шапка: поиск */}
-      <div className="border-b border-line px-3 py-2.5">
+      <div className="border-b border-line px-4 py-3">
         <form onSubmit={runSearch} className="relative">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -97,7 +97,7 @@ export default function NoteList() {
 
       {/* эйай-сводка */}
       {(searching || summary !== null) && (
-        <div className="border-b border-line bg-accent-soft px-3 py-2.5">
+        <div className="border-b border-line bg-accent-soft px-4 py-3">
           {searching ? (
             <p className="text-sm text-muted">эйай ищет…</p>
           ) : (
@@ -127,7 +127,7 @@ export default function NoteList() {
 
       {/* Заголовок архива */}
       {view === "archive" && (
-        <div className="flex h-10 items-center justify-between border-b border-line px-3 text-sm">
+        <div className="flex h-11 items-center justify-between border-b border-line px-4 text-sm">
           <span className="text-muted">В архиве: {list.length}</span>
           {list.length > 0 &&
             (confirmEmpty ? (
@@ -154,7 +154,7 @@ export default function NoteList() {
             <div
               key={n.id}
               onClick={() => select(n.id)}
-              className={`group relative cursor-pointer border-b border-line px-3 py-3 transition-colors ${
+              className={`group relative cursor-pointer border-b border-line px-4 py-3 transition-colors ${
                 selectedId === n.id ? "bg-accent-soft" : "hover:bg-surface2"
               }`}
             >

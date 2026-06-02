@@ -49,9 +49,9 @@ export default function ListColumn() {
       </div>
 
       {/* Низ */}
-      <footer className="border-t border-line p-2">
+      <footer className="border-t border-line px-4 py-3">
         <SyncStatus />
-        <div className="mt-1.5 flex items-center gap-1.5">
+        <div className="mt-2 flex items-center gap-2">
           <Button
             size="sm"
             variant={view === "archive" ? "primary" : "outline"}
