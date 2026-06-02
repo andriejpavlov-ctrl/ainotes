@@ -105,7 +105,7 @@ export default function EditorToolbar({
   const canAddImage = imageCount < 10;
 
   return (
-    <div className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-3 py-2 sm:px-4">
+    <div className="flex flex-nowrap items-center gap-0.5 overflow-x-auto border-b border-line bg-surface px-3 py-1.5 no-scrollbar sm:flex-wrap sm:overflow-visible sm:px-4 sm:py-2 [&>*]:shrink-0">
       {/* История */}
       <Btn title="Отменить (Ctrl+Z)" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
         <Undo2 size={16} />
