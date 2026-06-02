@@ -9,14 +9,6 @@ export type JSONContent = {
   [key: string]: unknown;
 };
 
-export interface Tag {
-  id: string;
-  user_id: string;
-  name: string;
-  color: string;
-  created_at: string;
-}
-
 export interface Note {
   id: string;
   user_id: string;
@@ -27,8 +19,6 @@ export interface Note {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
-  // Заполняется на клиенте после джойна.
-  tags?: Tag[];
 }
 
 export interface Reminder {
@@ -44,15 +34,3 @@ export interface Reminder {
 
 export const EMPTY_DOC: JSONContent = { type: "doc", content: [] };
 
-// Палитра цветов для тегов.
-export const TAG_COLORS = [
-  "#ef4444", // red
-  "#f97316", // orange
-  "#f0a500", // amber (акцент)
-  "#22c55e", // green
-  "#14b8a6", // teal
-  "#3b82f6", // blue
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#64748b", // slate
-];

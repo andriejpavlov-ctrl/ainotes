@@ -17,7 +17,6 @@ import type { JSONContent } from "@/lib/types";
 import EditorToolbar from "./EditorToolbar";
 import EditorBubbleMenu from "./EditorBubbleMenu";
 import ReminderDialog from "./ReminderDialog";
-import NoteTagBar from "./NoteTagBar";
 import IconButton from "./ui/IconButton";
 import {
   ChevronLeft,
@@ -179,11 +178,6 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
           className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
         />
 
-        {/* Теги на одном уровне с названием */}
-        <div className="hidden max-w-[45%] sm:flex">
-          <NoteTagBar noteId={noteId} noteTags={note.tags ?? []} />
-        </div>
-
         <span className="flex w-5 shrink-0 items-center justify-center text-muted" title={saving ? "Сохранение…" : "Сохранено"}>
           {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} className="text-success" strokeWidth={2.5} />}
         </span>
@@ -207,11 +201,6 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
             </>
           )}
         </div>
-      </div>
-
-      {/* Теги на мобильном — отдельной компактной строкой */}
-      <div className="border-b border-line bg-surface px-3 py-2 sm:hidden">
-        <NoteTagBar noteId={noteId} noteTags={note.tags ?? []} />
       </div>
 
       <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />

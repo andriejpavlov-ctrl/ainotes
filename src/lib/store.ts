@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
 import { docToPlainText } from "@/lib/markdown";
 import { genId } from "@/lib/id";
-import { EMPTY_DOC, type JSONContent, type Note, type Reminder, type Tag } from "@/lib/types";
+import { EMPTY_DOC, type JSONContent, type Note, type Reminder } from "@/lib/types";
 
 type View = "active" | "archive";
 export type SyncStatus = "synced" | "saving" | "error";
@@ -12,22 +12,18 @@ export type SyncStatus = "synced" | "saving" | "error";
 interface State {
   userId: string | null;
   notes: Note[];
-  tags: Tag[];
   reminders: Reminder[];
   selectedId: string | null;
   view: View;
-  activeTagFilter: string[]; // id тегов для фильтрации
   loading: boolean;
-  syncStatus: SyncStatus; // состояние синхронизации с БД
-  online: boolean; // есть ли сеть
+  syncStatus: SyncStatus;
+  online: boolean;
 
   init: (userId: string) => Promise<void>;
   refresh: () => Promise<void>;
   setOnline: (v: boolean) => void;
   select: (id: string | null) => void;
   setView: (v: View) => void;
-  toggleTagFilter: (tagId: string) => void;
-  clearTagFilter: () => void;
 
   createNote: () => Promise<string | null>;
   updateNoteContent: (id: string, title: string, content: JSONContent) => Promise<void>;
@@ -36,11 +32,6 @@ interface State {
   restore: (id: string) => Promise<void>;
   deletePermanent: (id: string) => Promise<void>;
   emptyArchive: () => Promise<void>;
-
-  createTag: (name: string, color: string) => Promise<Tag | null>;
-  deleteTag: (id: string) => Promise<void>;
-  assignTag: (noteId: string, tagId: string) => Promise<void>;
-  unassignTag: (noteId: string, tagId: string) => Promise<void>;
 
   createReminder: (
     noteId: string,
@@ -54,40 +45,24 @@ interface State {
 
 const supabase = createClient();
 
-// Связывает теги с заметками через note_tags.
-// Возвращает ok=false при ошибке запроса заметок, чтобы вызывающий
-// мог не затирать уже загруженные данные (иначе при сбое токена
-// список «пропадал» и показывалось «Заметок нет»).
+// Загрузка заметок и напоминаний. ok=false при ошибке заметок,
+// чтобы не затирать уже показанные данные при сбое токена.
 async function fetchAll(userId: string) {
-  const [notesRes, tagsRes, ntRes, remRes] = await Promise.all([
+  const [notesRes, remRes] = await Promise.all([
     supabase.from("notes").select("*").eq("user_id", userId),
-    supabase.from("tags").select("*").eq("user_id", userId).order("name"),
-    supabase.from("note_tags").select("note_id, tag_id"),
     supabase.from("reminders").select("*").eq("user_id", userId).order("remind_at"),
   ]);
 
   if (notesRes.error) {
     console.error("Ошибка загрузки заметок:", notesRes.error);
-    return { ok: false as const, notes: [], tags: [], reminders: [] };
+    return { ok: false as const, notes: [], reminders: [] };
   }
 
-  const tags = (tagsRes.data ?? []) as Tag[];
-  const tagById = new Map(tags.map((t) => [t.id, t]));
-  const tagsByNote = new Map<string, Tag[]>();
-  for (const row of (ntRes.data ?? []) as { note_id: string; tag_id: string }[]) {
-    const tag = tagById.get(row.tag_id);
-    if (!tag) continue;
-    const arr = tagsByNote.get(row.note_id) ?? [];
-    arr.push(tag);
-    tagsByNote.set(row.note_id, arr);
-  }
-
-  const notes = ((notesRes.data ?? []) as Note[]).map((n) => ({
-    ...n,
-    tags: tagsByNote.get(n.id) ?? [],
-  }));
-
-  return { ok: true as const, notes, tags, reminders: (remRes.data ?? []) as Reminder[] };
+  return {
+    ok: true as const,
+    notes: (notesRes.data ?? []) as Note[],
+    reminders: (remRes.data ?? []) as Reminder[],
+  };
 }
 
 let realtimeBound = false;
@@ -95,7 +70,6 @@ let realtimeBound = false;
 // Счётчик незавершённых записей в БД для индикатора синхронизации.
 let pendingWrites = 0;
 
-// Оборачивает запись в Supabase, обновляя статус синхронизации.
 async function track<T extends { error?: unknown }>(p: PromiseLike<T>): Promise<T> {
   pendingWrites++;
   useStore.setState({ syncStatus: "saving" });
@@ -116,11 +90,9 @@ async function track<T extends { error?: unknown }>(p: PromiseLike<T>): Promise<
 export const useStore = create<State>((set, get) => ({
   userId: null,
   notes: [],
-  tags: [],
   reminders: [],
   selectedId: null,
   view: "active",
-  activeTagFilter: [],
   loading: true,
   syncStatus: "synced",
   online: true,
@@ -128,17 +100,14 @@ export const useStore = create<State>((set, get) => ({
   init: async (userId) => {
     set({ userId, loading: true });
     try {
-      const { ok, notes, tags, reminders } = await fetchAll(userId);
-      if (ok) set({ notes, tags, reminders });
+      const { ok, notes, reminders } = await fetchAll(userId);
+      if (ok) set({ notes, reminders });
     } catch (e) {
       console.error("Не удалось загрузить данные:", e);
     } finally {
-      // Снимаем «Загрузку» в любом случае, чтобы интерфейс не зависал.
       set({ loading: false });
     }
 
-    // Realtime-синхронизация между устройствами (требование №3).
-    // Перезагрузку дебаунсим, чтобы частые правки не дёргали refetch.
     if (!realtimeBound) {
       realtimeBound = true;
       let t: ReturnType<typeof setTimeout> | null = null;
@@ -149,8 +118,6 @@ export const useStore = create<State>((set, get) => ({
       supabase
         .channel("ai-notes-sync")
         .on("postgres_changes", { event: "*", schema: "public", table: "notes" }, reload)
-        .on("postgres_changes", { event: "*", schema: "public", table: "tags" }, reload)
-        .on("postgres_changes", { event: "*", schema: "public", table: "note_tags" }, reload)
         .on("postgres_changes", { event: "*", schema: "public", table: "reminders" }, reload)
         .subscribe();
     }
@@ -159,26 +126,17 @@ export const useStore = create<State>((set, get) => ({
   refresh: async () => {
     const { userId } = get();
     if (!userId) return;
-    const { ok, notes, tags, reminders } = await fetchAll(userId);
-    // При сбое запроса не затираем уже показанные данные.
-    if (ok) set({ notes, tags, reminders });
+    const { ok, notes, reminders } = await fetchAll(userId);
+    if (ok) set({ notes, reminders });
   },
 
   setOnline: (v) => set({ online: v }),
   select: (id) => set({ selectedId: id }),
   setView: (v) => set({ view: v, selectedId: null }),
-  toggleTagFilter: (tagId) =>
-    set((s) => ({
-      activeTagFilter: s.activeTagFilter.includes(tagId)
-        ? s.activeTagFilter.filter((t) => t !== tagId)
-        : [...s.activeTagFilter, tagId],
-    })),
-  clearTagFilter: () => set({ activeTagFilter: [] }),
 
   createNote: async () => {
     const { userId } = get();
     if (!userId) return null;
-    // Оптимистично: заметка появляется мгновенно, запись в БД — фоном.
     const id = genId();
     const now = new Date().toISOString();
     const note: Note = {
@@ -191,7 +149,6 @@ export const useStore = create<State>((set, get) => ({
       deleted_at: null,
       created_at: now,
       updated_at: now,
-      tags: [],
     };
     set((s) => ({ notes: [note, ...s.notes], selectedId: id }));
 
@@ -201,7 +158,6 @@ export const useStore = create<State>((set, get) => ({
         .insert({ id, user_id: userId, title: "", content: EMPTY_DOC, content_text: "" }),
     );
     if (error) {
-      // Откат, если вставка не удалась.
       set((s) => ({
         notes: s.notes.filter((n) => n.id !== id),
         selectedId: s.selectedId === id ? null : s.selectedId,
@@ -263,71 +219,6 @@ export const useStore = create<State>((set, get) => ({
     if (ids.length === 0) return;
     set((s) => ({ notes: s.notes.filter((n) => !n.deleted_at), selectedId: null }));
     await track(supabase.from("notes").delete().in("id", ids));
-  },
-
-  createTag: async (name, color) => {
-    const { userId } = get();
-    if (!userId) return null;
-    // Оптимистично: тег появляется сразу, запись в БД — фоном.
-    const id = genId();
-    const tag: Tag = {
-      id,
-      user_id: userId,
-      name,
-      color,
-      created_at: new Date().toISOString(),
-    };
-    set((s) => ({ tags: [...s.tags, tag].sort((a, b) => a.name.localeCompare(b.name)) }));
-
-    const { error } = await track(supabase.from("tags").insert({ id, user_id: userId, name, color }));
-    if (error) {
-      // Откат оптимистичного тега.
-      set((s) => ({ tags: s.tags.filter((t) => t.id !== id) }));
-      console.error("Не удалось создать тег:", error);
-      // Дубликат имени (unique constraint): тег уже существует.
-      if (error.code === "23505" || /duplicate key|unique constraint/i.test(error.message)) {
-        await get().refresh(); // подтягиваем существующий тег в список
-        throw new Error(`Тег «${name}» уже существует.`);
-      }
-      throw new Error(error.message || "Не удалось создать тег");
-    }
-    return tag;
-  },
-
-  deleteTag: async (id) => {
-    set((s) => ({
-      tags: s.tags.filter((t) => t.id !== id),
-      activeTagFilter: s.activeTagFilter.filter((t) => t !== id),
-      notes: s.notes.map((n) => ({
-        ...n,
-        tags: (n.tags ?? []).filter((t) => t.id !== id),
-      })),
-    }));
-    await track(supabase.from("tags").delete().eq("id", id));
-  },
-
-  assignTag: async (noteId, tagId) => {
-    const tag = get().tags.find((t) => t.id === tagId);
-    if (!tag) return;
-    set((s) => ({
-      notes: s.notes.map((n) =>
-        n.id === noteId && !(n.tags ?? []).some((t) => t.id === tagId)
-          ? { ...n, tags: [...(n.tags ?? []), tag] }
-          : n,
-      ),
-    }));
-    await track(supabase.from("note_tags").insert({ note_id: noteId, tag_id: tagId }));
-  },
-
-  unassignTag: async (noteId, tagId) => {
-    set((s) => ({
-      notes: s.notes.map((n) =>
-        n.id === noteId
-          ? { ...n, tags: (n.tags ?? []).filter((t) => t.id !== tagId) }
-          : n,
-      ),
-    }));
-    await track(supabase.from("note_tags").delete().eq("note_id", noteId).eq("tag_id", tagId));
   },
 
   createReminder: async (noteId, remindAt, label, anchorText) => {

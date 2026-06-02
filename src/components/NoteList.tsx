@@ -4,10 +4,8 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Pin, Trash2, RotateCcw, X, Search, Sparkles, Tag as TagIcon, Settings2 } from "lucide-react";
+import { Pin, Trash2, RotateCcw, X, Search, Sparkles } from "lucide-react";
 import type { Note } from "@/lib/types";
-import TagPanel from "./TagPanel";
-import TagAssignMenu from "./TagAssignMenu";
 import IconButton from "./ui/IconButton";
 
 function snippet(n: Note): string {
@@ -20,9 +18,6 @@ export default function NoteList() {
   const setView = useStore((s) => s.setView);
   const selectedId = useStore((s) => s.selectedId);
   const select = useStore((s) => s.select);
-  const tags = useStore((s) => s.tags);
-  const activeTagFilter = useStore((s) => s.activeTagFilter);
-  const toggleTagFilter = useStore((s) => s.toggleTagFilter);
   const restore = useStore((s) => s.restore);
   const deletePermanent = useStore((s) => s.deletePermanent);
   const emptyArchive = useStore((s) => s.emptyArchive);
@@ -30,8 +25,6 @@ export default function NoteList() {
   const softDelete = useStore((s) => s.softDelete);
 
   const [confirmEmpty, setConfirmEmpty] = useState(false);
-  const [tagPanelOpen, setTagPanelOpen] = useState(false);
-  const [tagMenuFor, setTagMenuFor] = useState<string | null>(null);
 
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
@@ -51,7 +44,7 @@ export default function NoteList() {
         body: JSON.stringify({ query }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) setSummary("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
+      if (!res.ok) setSummary("эйай не ответил: " + (data.error || `ошибка ${res.status}`));
       else {
         setSummary(data.summary ?? "");
         setResults(data.relevant_ids ?? []);
@@ -70,22 +63,19 @@ export default function NoteList() {
   }
 
   const list = useMemo(() => {
-    let arr = notes.filter((n) => (view === "archive" ? n.deleted_at : !n.deleted_at));
-    if (view === "active" && activeTagFilter.length > 0) {
-      arr = arr.filter((n) => activeTagFilter.every((tid) => (n.tags ?? []).some((t) => t.id === tid)));
-    }
+    const arr = notes.filter((n) => (view === "archive" ? n.deleted_at : !n.deleted_at));
     return arr.sort((a, b) => {
       if (view === "active" && a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
     });
-  }, [notes, view, activeTagFilter]);
+  }, [notes, view]);
 
   const resultNotes = results.map((id) => notes.find((n) => n.id === id)).filter(Boolean) as Note[];
 
   return (
     <div className="flex h-full flex-col">
-      {/* Шапка: поиск + фильтр по тегам */}
-      <div className="space-y-2 border-b border-line px-3 py-2.5">
+      {/* Шапка: поиск */}
+      <div className="border-b border-line px-3 py-2.5">
         <form onSubmit={runSearch} className="relative">
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -103,40 +93,9 @@ export default function NoteList() {
             <Sparkles size={16} />
           </button>
         </form>
-
-        {/* Фильтр по тегам (под строкой поиска) */}
-        {view === "active" && (
-          <div className="flex items-center gap-1.5">
-            <div className="flex flex-1 items-center gap-1.5 overflow-x-auto no-scrollbar">
-              {tags.length === 0 ? (
-                <span className="text-xs text-muted">Тегов пока нет</span>
-              ) : (
-                tags.map((t) => {
-                  const active = activeTagFilter.includes(t.id);
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => toggleTagFilter(t.id)}
-                      className={`inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors ${
-                        active ? "border-transparent font-medium" : "border-line text-muted hover:bg-surface2"
-                      }`}
-                      style={active ? { backgroundColor: t.color + "22", color: t.color } : undefined}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                      {t.name}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-            <IconButton size="sm" onClick={() => setTagPanelOpen(true)} aria-label="Управление тегами" title="Управление тегами">
-              <Settings2 size={15} />
-            </IconButton>
-          </div>
-        )}
       </div>
 
-      {/* ИИ-сводка */}
+      {/* эйай-сводка */}
       {(searching || summary !== null) && (
         <div className="border-b border-line bg-accent-soft px-3 py-2.5">
           {searching ? (
@@ -188,7 +147,7 @@ export default function NoteList() {
       <div className="flex-1 overflow-y-auto">
         {list.length === 0 ? (
           <p className="p-8 text-center text-sm text-muted">
-            {view === "archive" ? "Архив пуст" : activeTagFilter.length > 0 ? "Нет заметок с этими тегами" : "Заметок нет"}
+            {view === "archive" ? "Архив пуст" : "Заметок нет"}
           </p>
         ) : (
           list.map((n) => (
@@ -212,9 +171,6 @@ export default function NoteList() {
                       <IconButton size="sm" onClick={(e) => { e.stopPropagation(); togglePin(n.id); }} aria-label="Закрепить">
                         <Pin size={15} className={n.is_pinned ? "fill-accent text-accent" : ""} />
                       </IconButton>
-                      <IconButton size="sm" active={tagMenuFor === n.id} onClick={(e) => { e.stopPropagation(); setTagMenuFor(tagMenuFor === n.id ? null : n.id); }} aria-label="Теги">
-                        <TagIcon size={15} />
-                      </IconButton>
                       <IconButton size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); softDelete(n.id); }} aria-label="В архив">
                         <Trash2 size={15} />
                       </IconButton>
@@ -234,32 +190,13 @@ export default function NoteList() {
 
               <p className="mt-1 line-clamp-1 text-[13px] text-muted">{snippet(n) || "Нет текста"}</p>
 
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className="text-[11px] text-muted">
-                  {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ru })}
-                </span>
-                <span className="flex gap-1">
-                  {(n.tags ?? []).map((t) => (
-                    <span key={t.id} className="h-2 w-2 rounded-full" style={{ backgroundColor: t.color }} title={t.name} />
-                  ))}
-                </span>
+              <div className="mt-1.5 text-[11px] text-muted">
+                {formatDistanceToNow(new Date(n.updated_at), { addSuffix: true, locale: ru })}
               </div>
-
-              {/* Поповер присвоения тегов из карточки (п.3) */}
-              {tagMenuFor === n.id && (
-                <>
-                  <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setTagMenuFor(null); }} />
-                  <div className="absolute right-2 top-11 z-40" onClick={(e) => e.stopPropagation()}>
-                    <TagAssignMenu noteId={n.id} noteTags={n.tags ?? []} />
-                  </div>
-                </>
-              )}
             </div>
           ))
         )}
       </div>
-
-      {tagPanelOpen && <TagPanel onClose={() => setTagPanelOpen(false)} />}
     </div>
   );
 }
