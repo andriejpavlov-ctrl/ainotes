@@ -218,12 +218,12 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
           <EditorContent editor={editor} />
         </div>
 
-        {/* Масштаб текста (50–150%) — как в Safari: «А» меньше → больше */}
+        {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
         <div
-          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-line bg-surface/95 px-3 py-1.5 shadow-pop backdrop-blur"
+          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-line bg-surface/80 px-3 py-1.5 text-muted opacity-60 backdrop-blur transition hover:opacity-100"
           title={`Масштаб текста ${scale}%`}
         >
-          <span className="leading-none text-muted" style={{ fontSize: 11 }}>А</span>
+          <span className="leading-none" style={{ fontSize: 10 }}>А</span>
           <input
             type="range"
             min={0}
@@ -231,10 +231,10 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
             step={1}
             value={Math.max(0, SCALES.indexOf(scale))}
             onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
-            className="w-24 cursor-pointer accent-[var(--accent)]"
+            className="scale-slider w-20"
             aria-label="Масштаб текста"
           />
-          <span className="leading-none text-muted" style={{ fontSize: 19 }}>А</span>
+          <span className="leading-none" style={{ fontSize: 17 }}>А</span>
         </div>
       </div>
 
