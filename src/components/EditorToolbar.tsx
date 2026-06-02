@@ -26,6 +26,8 @@ import {
   Pilcrow,
   Indent,
   Outdent,
+  Undo2,
+  Redo2,
 } from "lucide-react";
 
 const TEXT_COLORS = ["#1f2024", "#ef4444", "#f0a500", "#22c55e", "#3b82f6", "#8b5cf6"];
@@ -104,6 +106,15 @@ export default function EditorToolbar({
 
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-line bg-surface px-3 py-2 sm:px-4">
+      {/* История */}
+      <Btn title="Отменить (Ctrl+Z)" disabled={!editor.can().undo()} onClick={() => editor.chain().focus().undo().run()}>
+        <Undo2 size={16} />
+      </Btn>
+      <Btn title="Повторить (Ctrl+Y)" disabled={!editor.can().redo()} onClick={() => editor.chain().focus().redo().run()}>
+        <Redo2 size={16} />
+      </Btn>
+      <Sep />
+
       {/* Стиль абзаца */}
       <Btn title="Обычный текст" active={editor.isActive("paragraph") && !editor.isActive("heading")} onClick={() => editor.chain().focus().setParagraph().run()}>
         <Pilcrow size={16} />
