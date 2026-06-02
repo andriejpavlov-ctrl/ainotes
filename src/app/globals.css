@@ -65,6 +65,14 @@ body {
   overscroll-behavior: none;
 }
 
+/* На экране заметок фиксируем body к видимой области: скроллится только
+   внутренний контейнер — так sticky-панели остаются на месте (iOS). */
+body.app-locked {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
 /* iOS: не зумить при фокусе (шрифт ≥16px) */
 input,
 textarea,

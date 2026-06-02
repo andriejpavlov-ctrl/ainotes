@@ -22,6 +22,13 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
     init(userId);
   }, [init, userId]);
 
+  // На экране заметок блокируем прокрутку body, чтобы скроллился только
+  // внутренний список/редактор (иначе на iOS sticky-панель уезжает).
+  useEffect(() => {
+    document.body.classList.add("app-locked");
+    return () => document.body.classList.remove("app-locked");
+  }, []);
+
   // Обновляем данные, когда вкладка снова становится активной
   // (возврат из фона / восстановление страницы из кэша на мобильном).
   useEffect(() => {
@@ -89,7 +96,7 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
   }, [reminders, notes]);
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-[var(--bg)]">
+    <div className="flex h-full overflow-hidden bg-[var(--bg)]">
       {/* Список заметок (на мобильном скрывается, когда открыт редактор). */}
       <div
         className={`w-full flex-col border-r border-[var(--border)] bg-[var(--panel)] md:flex md:w-96 md:shrink-0 ${

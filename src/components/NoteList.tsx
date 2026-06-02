@@ -97,7 +97,7 @@ export default function NoteList() {
                       if (e.key === "Enter") { e.preventDefault(); commitRename(); }
                       if (e.key === "Escape") setEditingId(null);
                     }}
-                    className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0.5 text-[15px] font-medium outline-none"
+                    className="min-w-0 flex-1 rounded border border-line-strong bg-surface px-1.5 py-0.5 text-[15px] font-medium outline-none"
                   />
                 ) : (
                   <h3
