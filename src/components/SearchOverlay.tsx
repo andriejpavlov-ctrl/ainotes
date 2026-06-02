@@ -41,7 +41,7 @@ export default function SearchOverlay() {
 
   if (!open) return null;
 
-  // Быстрые совпадения по заголовку/тексту (мгновенно, без ИИ).
+  // Быстрые совпадения по заголовку/тексту (мгновенно, без AI).
   const q = query.trim().toLowerCase();
   const quick = q
     ? notes
@@ -138,7 +138,7 @@ export default function SearchOverlay() {
             </div>
           )}
 
-          {/* Результаты ИИ */}
+          {/* Результаты AI */}
           {aiResultNotes.length > 0 && (
             <div className="py-1">
               <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Подходящие по смыслу</div>

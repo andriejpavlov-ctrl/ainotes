@@ -17,8 +17,8 @@ export default function Home() {
 
       <ul className="mt-6 grid grid-cols-1 gap-2 text-left text-sm text-[var(--muted)] sm:grid-cols-2">
         <li>🎨 Цветные теги и фильтрация</li>
-        <li>🤖 ИИ-поиск и ИИ-сводка по заметкам</li>
-        <li>✍️ Рерайт и сокращение текста с ИИ</li>
+        <li>🤖 AI-поиск и AI-сводка по заметкам</li>
+        <li>✍️ Рерайт и сокращение текста с AI</li>
         <li>✅ Списки, чек-листы и таблицы</li>
         <li>⏰ Напоминания к заметкам</li>
         <li>📤 Экспорт в Markdown и .txt</li>

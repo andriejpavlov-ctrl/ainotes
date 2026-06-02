@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     let title = textFromMessage(message).replace(/^["'«»\s]+|["'«».\s]+$/g, "").slice(0, 80);
     return NextResponse.json({ title });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Ошибка ИИ";
+    const msg = e instanceof Error ? e.message : "Ошибка AI";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

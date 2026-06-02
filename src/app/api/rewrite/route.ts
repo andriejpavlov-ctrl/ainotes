@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ result: textFromMessage(message) });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Неизвестная ошибка ИИ";
+    const msg = e instanceof Error ? e.message : "Неизвестная ошибка AI";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

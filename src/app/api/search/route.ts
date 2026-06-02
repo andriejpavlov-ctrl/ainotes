@@ -4,8 +4,8 @@ import { getAnthropic, createMessage, textFromMessage } from "@/lib/anthropic";
 
 export const runtime = "nodejs";
 
-// ИИ-поиск по заметкам (требование №4):
-// находит релевантные заметки и выдаёт короткую ИИ-сводку.
+// AI-поиск по заметкам (требование №4):
+// находит релевантные заметки и выдаёт короткую AI-сводку.
 export async function POST(req: Request) {
   const supabase = createClient();
   const {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   }
 
   // Кандидаты: сначала по совпадению текста, иначе — недавние заметки,
-  // чтобы ИИ мог найти семантически близкие.
+  // чтобы AI мог найти семантически близкие.
   const like = `%${query.replace(/[%_]/g, "")}%`;
   const { data: matched } = await supabase
     .from("notes")
@@ -73,7 +73,7 @@ export async function POST(req: Request) {
     });
     raw = textFromMessage(message);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Неизвестная ошибка ИИ";
+    const msg = e instanceof Error ? e.message : "Неизвестная ошибка AI";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 

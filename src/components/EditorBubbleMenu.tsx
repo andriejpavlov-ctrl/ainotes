@@ -40,7 +40,7 @@ export default function EditorBubbleMenu({
       if (res.ok && data.result) {
         editor.chain().focus().insertContentAt({ from, to }, data.result).run();
       } else {
-        alert("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
+        alert("AI не ответил: " + (data.error || `ошибка ${res.status}`));
       }
     } catch (e) {
       alert("Не удалось связаться с сервером: " + (e instanceof Error ? e.message : ""));
@@ -59,12 +59,12 @@ export default function EditorBubbleMenu({
       <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1 shadow-lg">
         {busy ? (
           <span className="flex items-center gap-1 px-2 py-1 text-sm text-[var(--accent)]">
-            <Loader2 size={14} className="animate-spin" /> ИИ работает…
+            <Loader2 size={14} className="animate-spin" /> AI работает…
           </span>
         ) : (
           <>
             <span className="flex items-center gap-1 px-1 text-xs font-medium text-[var(--accent)]">
-              <Sparkles size={13} /> ИИ
+              <Sparkles size={13} /> AI
             </span>
             <Item icon={<Wand2 size={14} />} label="Переформулировать" onClick={() => rewrite("reformulate")} />
             <Item icon={<Scissors size={14} />} label="Сократить" onClick={() => rewrite("shorten")} />

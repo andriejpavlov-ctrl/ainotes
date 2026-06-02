@@ -81,7 +81,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   titleRef.current = title;
   const autoTitleRef = useRef(false); // авто-заголовок генерируем один раз
 
-  // ИИ придумывает заголовок по содержимому, если пользователь его не задал.
+  // AI придумывает заголовок по содержимому, если пользователь его не задал.
   async function generateTitle(text: string) {
     try {
       const res = await fetch("/api/title", {
@@ -117,7 +117,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
       // Автоматически проставляем неразрывные пробелы перед сохранением (№6).
       const doc = applyNbspToDoc(editor.getJSON() as JSONContent);
       await updateNoteContent(noteId, titleRef.current, doc);
-      // Если названия нет, а текст уже есть — просим ИИ придумать заголовок.
+      // Если названия нет, а текст уже есть — просим AI придумать заголовок.
       const text = docToPlainText(doc);
       if (!titleRef.current.trim() && text.trim().length >= 15 && !autoTitleRef.current) {
         autoTitleRef.current = true;
@@ -154,7 +154,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
     editor.chain().focus().setImage({ src: data.publicUrl }).run();
   }
 
-  // Сокращение всей заметки через ИИ (№10).
+  // Сокращение всей заметки через AI (№10).
   async function shortenNote() {
     if (!editor) return;
     setMenuOpen(false);
@@ -169,7 +169,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.result) {
-        alert("ИИ не ответил: " + (data.error || `ошибка ${res.status}`));
+        alert("AI не ответил: " + (data.error || `ошибка ${res.status}`));
       } else if (window.confirm("Заменить заметку сокращённой версией?\n\n" + data.result)) {
         editor.chain().focus().setContent(textToDoc(data.result) as never, true).run();
         scheduleSave();
@@ -200,7 +200,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Шапка: заголовок (прилипает при скролле) */}
         <div className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
           <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
@@ -223,7 +223,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
                 <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
                 <div className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
                   <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
-                  <MenuItem icon={<Scissors size={16} />} label="Сократить (ИИ)" onClick={shortenNote} />
+                  <MenuItem icon={<Scissors size={16} />} label="Сократить (AI)" onClick={shortenNote} />
                   <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
                   <MenuItem icon={<FileDown size={16} />} label="Экспорт в .txt" onClick={() => exportNote("txt")} />
                   <div className="my-1 h-px bg-line" />
@@ -286,7 +286,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
       {shortening && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
           <div className="flex items-center gap-2 rounded-xl bg-[var(--panel)] px-5 py-3 shadow-lg">
-            <Loader2 size={18} className="animate-spin text-[var(--accent)]" /> ИИ сокращает заметку…
+            <Loader2 size={18} className="animate-spin text-[var(--accent)]" /> AI сокращает заметку…
           </div>
         </div>
       )}
