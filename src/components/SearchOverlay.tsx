@@ -5,6 +5,14 @@ import { useStore } from "@/lib/store";
 import type { Note } from "@/lib/types";
 import { Search, Sparkles, X, Loader2, FileText } from "lucide-react";
 
+// Примеры-подсказки возможностей умного поиска.
+const SUGGESTIONS = [
+  { text: "О чём мои заметки про логистику?", hint: "Короткий ответ-сводка по содержимому" },
+  { text: "Найди, где упоминается дедлайн", hint: "Поиск по смыслу, а не только по словам" },
+  { text: "Собери все задачи и их статусы", hint: "Соберёт информацию из разных заметок" },
+  { text: "Что запланировано на эту неделю?", hint: "Ответит и покажет нужные заметки" },
+];
+
 // Раскрывающийся поиск в стиле Spotlight / Windows 11.
 export default function SearchOverlay() {
   const open = useStore((s) => s.searchOpen);
@@ -65,7 +73,12 @@ export default function SearchOverlay() {
 
   async function runAiSearch(e: React.FormEvent) {
     e.preventDefault();
-    if (!query.trim()) return;
+    await search(query);
+  }
+
+  async function search(text: string) {
+    if (!text.trim()) return;
+    setQuery(text);
     setSearching(true);
     setSummary(null);
     setResults([]);
@@ -73,7 +86,7 @@ export default function SearchOverlay() {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query: text }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) setSummary("Не удалось получить ответ: " + (data.error || `ошибка ${res.status}`));
@@ -153,9 +166,26 @@ export default function SearchOverlay() {
           )}
 
           {!query && (
-            <p className="px-4 py-6 text-center text-sm text-muted">
-              Введите запрос. Enter — умный поиск со сводкой.
-            </p>
+            <div className="px-4 py-3">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+                Умный поиск понимает смысл — спросите своими словами
+              </p>
+              <div className="space-y-0.5">
+                {SUGGESTIONS.map((s) => (
+                  <button
+                    key={s.text}
+                    onClick={() => search(s.text)}
+                    className="flex w-full items-start gap-2.5 rounded px-2 py-2 text-left hover:bg-surface2"
+                  >
+                    <Sparkles size={15} className="mt-0.5 shrink-0 text-accent" />
+                    <span className="min-w-0">
+                      <span className="block text-sm text-ink">{s.text}</span>
+                      <span className="block text-[12px] text-muted">{s.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
