@@ -199,8 +199,8 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   }
 
   return (
-    <div className="relative flex h-full flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+    <div className="relative flex h-full min-w-0 flex-col">
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
         {/* Шапка: заголовок (прилипает при скролле) */}
         <div className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
           <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
@@ -235,7 +235,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
         </div>
 
         {/* Панель инструментов (прилипает под шапкой) */}
-        <div className="sticky top-14 z-20">
+        <div className="sticky top-14 z-20 min-w-0">
           <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
         </div>
 

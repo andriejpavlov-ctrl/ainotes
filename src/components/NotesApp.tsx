@@ -107,7 +107,7 @@ export default function NotesApp({ userId }: { userId: string; email: string }) 
       </div>
 
       {/* Редактор. */}
-      <div className={`flex-1 ${selectedId ? "flex" : "hidden md:flex"} flex-col bg-[var(--bg)]`}>
+      <div className={`min-w-0 flex-1 ${selectedId ? "flex" : "hidden md:flex"} flex-col bg-[var(--bg)]`}>
         {selectedId ? (
           <NoteEditor key={selectedId} noteId={selectedId} />
         ) : loading ? (
