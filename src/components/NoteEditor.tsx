@@ -17,6 +17,7 @@ import type { JSONContent } from "@/lib/types";
 import EditorToolbar from "./EditorToolbar";
 import EditorBubbleMenu from "./EditorBubbleMenu";
 import ReminderDialog from "./ReminderDialog";
+import TableControls from "./TableControls";
 import IconButton from "./ui/IconButton";
 import {
   ChevronLeft,
@@ -26,7 +27,6 @@ import {
   FileDown,
   Trash2,
   Loader2,
-  Check,
 } from "lucide-react";
 
 // Преобразует «плоский» текст (абзацы через пустую строку) в документ TipTap.
@@ -58,11 +58,23 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   const select = useStore((s) => s.select);
 
   const [title, setTitle] = useState(note?.title ?? "");
-  const [saving, setSaving] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reminderFor, setReminderFor] = useState<string | null | undefined>(undefined);
   const [shortening, setShortening] = useState(false);
   const [imageCount, setImageCount] = useState(note ? countImages(note.content) : 0);
+
+  // Масштаб текста заметки (50–150%), сохраняется между сессиями.
+  const SCALES = [50, 75, 100, 125, 150];
+  const [scale, setScale] = useState(100);
+  useEffect(() => {
+    const saved = Number(localStorage.getItem("note-text-scale"));
+    if (SCALES.includes(saved)) setScale(saved);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function changeScale(v: number) {
+    setScale(v);
+    localStorage.setItem("note-text-scale", String(v));
+  }
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef(title);
@@ -83,13 +95,11 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
 
   const scheduleSave = useCallback(() => {
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    setSaving(true);
     saveTimer.current = setTimeout(async () => {
       if (!editor) return;
       // Автоматически проставляем неразрывные пробелы перед сохранением (№6).
       const doc = applyNbspToDoc(editor.getJSON() as JSONContent);
       await updateNoteContent(noteId, titleRef.current, doc);
-      setSaving(false);
     }, 700);
   }, [editor, noteId, updateNoteContent]);
 
@@ -178,10 +188,6 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
           className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
         />
 
-        <span className="flex w-5 shrink-0 items-center justify-center text-muted" title={saving ? "Сохранение…" : "Сохранено"}>
-          {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} className="text-success" strokeWidth={2.5} />}
-        </span>
-
         {/* Меню действий */}
         <div className="relative">
           <IconButton onClick={() => setMenuOpen((v) => !v)} aria-label="Действия">
@@ -204,10 +210,29 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
       </div>
 
       <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
+      <TableControls editor={editor} />
       <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
 
-      <div className="flex-1 overflow-y-auto">
-        <EditorContent editor={editor} />
+      <div className="relative min-h-0 flex-1">
+        <div className="h-full overflow-y-auto" style={{ fontSize: `${scale}%` }}>
+          <EditorContent editor={editor} />
+        </div>
+
+        {/* Масштаб текста (50–150%) */}
+        <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-line bg-surface/95 px-3 py-1.5 shadow-pop backdrop-blur">
+          <span className="w-9 text-right text-[11px] tabular-nums text-muted">{scale}%</span>
+          <input
+            type="range"
+            min={0}
+            max={4}
+            step={1}
+            value={Math.max(0, SCALES.indexOf(scale))}
+            onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
+            className="w-28 accent-[var(--accent)]"
+            title="Масштаб текста"
+            aria-label="Масштаб текста"
+          />
+        </div>
       </div>
 
       {shortening && (

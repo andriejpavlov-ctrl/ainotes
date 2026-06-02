@@ -122,19 +122,19 @@ textarea:focus-visible,
   margin-top: 0.65em;
 }
 .ProseMirror h1 {
-  font-size: 1.6rem;
+  font-size: 1.6em;
   font-weight: 700;
   letter-spacing: -0.01em;
   margin-top: 1em;
 }
 .ProseMirror h2 {
-  font-size: 1.3rem;
+  font-size: 1.3em;
   font-weight: 700;
   letter-spacing: -0.01em;
   margin-top: 0.9em;
 }
 .ProseMirror h3 {
-  font-size: 1.1rem;
+  font-size: 1.1em;
   font-weight: 600;
 }
 .ProseMirror ul,
@@ -144,8 +144,27 @@ textarea:focus-visible,
 .ProseMirror ul {
   list-style: disc;
 }
+.ProseMirror ul ul {
+  list-style: circle;
+}
+.ProseMirror ul ul ul {
+  list-style: square;
+}
 .ProseMirror ol {
   list-style: decimal;
+}
+.ProseMirror ol ol {
+  list-style: lower-alpha;
+}
+.ProseMirror ol ol ol {
+  list-style: lower-roman;
+}
+/* Подсветка текста (выделить цветом) */
+.ProseMirror mark {
+  border-radius: 3px;
+  padding: 0.05em 0.15em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 .ProseMirror blockquote {
   border-left: 3px solid var(--accent);

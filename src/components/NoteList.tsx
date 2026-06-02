@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import { Pin, Trash2, RotateCcw, X } from "lucide-react";
+import { Pin, Trash2, RotateCcw } from "lucide-react";
 import type { Note } from "@/lib/types";
 import IconButton from "./ui/IconButton";
 
@@ -22,8 +22,20 @@ export default function NoteList() {
   const emptyArchive = useStore((s) => s.emptyArchive);
   const togglePin = useStore((s) => s.togglePin);
   const softDelete = useStore((s) => s.softDelete);
+  const renameNote = useStore((s) => s.renameNote);
 
   const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+
+  function startRename(id: string, title: string) {
+    setEditingId(id);
+    setEditTitle(title);
+  }
+  function commitRename() {
+    if (editingId) renameNote(editingId, editTitle.trim());
+    setEditingId(null);
+  }
 
   const list = useMemo(() => {
     const arr = notes.filter((n) => (view === "archive" ? n.deleted_at : !n.deleted_at));
@@ -42,8 +54,13 @@ export default function NoteList() {
           {list.length > 0 &&
             (confirmEmpty ? (
               <span className="flex items-center gap-2">
-                <button onClick={() => { emptyArchive(); setConfirmEmpty(false); }} className="font-medium text-danger">Точно удалить всё?</button>
-                <button onClick={() => setConfirmEmpty(false)} aria-label="Отмена" className="text-muted hover:text-ink"><X size={14} /></button>
+                <span className="text-muted">Удалить всё?</span>
+                <button onClick={() => { emptyArchive(); setConfirmEmpty(false); }} className="rounded bg-danger px-2.5 py-1 text-xs font-medium text-white hover:opacity-90">
+                  Да
+                </button>
+                <button onClick={() => setConfirmEmpty(false)} className="rounded border border-line px-2.5 py-1 text-xs font-medium hover:bg-surface2">
+                  Нет
+                </button>
               </span>
             ) : (
               <button onClick={() => setConfirmEmpty(true)} className="flex items-center gap-1 text-danger hover:underline">
@@ -69,12 +86,31 @@ export default function NoteList() {
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <h3 className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">
-                  {n.is_pinned && view === "active" && (
-                    <Pin size={12} className="mr-1 inline -translate-y-0.5 fill-accent text-accent" />
-                  )}
-                  {n.title || "Без названия"}
-                </h3>
+                {editingId === n.id ? (
+                  <input
+                    autoFocus
+                    value={editTitle}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onBlur={commitRename}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); commitRename(); }
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    className="min-w-0 flex-1 rounded border border-accent bg-surface px-1.5 py-0.5 text-[15px] font-medium outline-none"
+                  />
+                ) : (
+                  <h3
+                    onClick={view === "active" ? (e) => { e.stopPropagation(); startRename(n.id, n.title); } : undefined}
+                    title={view === "active" ? "Нажмите, чтобы переименовать" : undefined}
+                    className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink"
+                  >
+                    {n.is_pinned && view === "active" && (
+                      <Pin size={12} className="mr-1 inline -translate-y-0.5 fill-accent text-accent" />
+                    )}
+                    {n.title || "Без названия"}
+                  </h3>
+                )}
                 <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition md:opacity-0 md:group-hover:opacity-100">
                   {view === "active" ? (
                     <>

@@ -24,9 +24,12 @@ import {
   Heading2,
   Heading3,
   Pilcrow,
+  Indent,
+  Outdent,
 } from "lucide-react";
 
 const TEXT_COLORS = ["#1f2024", "#ef4444", "#f0a500", "#22c55e", "#3b82f6", "#8b5cf6"];
+const HIGHLIGHT_COLORS = ["#fde68a", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#e9d5ff"];
 
 function Btn({
   onClick,
@@ -81,6 +84,16 @@ export default function EditorToolbar({
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   }
 
+  // Изменение уровня вложенности списка (маркированного/нумерованного/чек-листа).
+  function indent() {
+    if (editor.can().sinkListItem("listItem")) editor.chain().focus().sinkListItem("listItem").run();
+    else editor.chain().focus().sinkListItem("taskItem").run();
+  }
+  function outdent() {
+    if (editor.can().liftListItem("listItem")) editor.chain().focus().liftListItem("listItem").run();
+    else editor.chain().focus().liftListItem("taskItem").run();
+  }
+
   // Применяет неразрывные пробелы ко всему документу (требование №6).
   function applyTypography() {
     const fixed = applyNbspToDoc(editor.getJSON());
@@ -119,20 +132,35 @@ export default function EditorToolbar({
       <Btn title="Зачёркнутый" active={editor.isActive("strike")} onClick={() => editor.chain().focus().toggleStrike().run()}>
         <Strikethrough size={16} />
       </Btn>
-      <Btn title="Выделить цветом" active={editor.isActive("highlight")} onClick={() => editor.chain().focus().toggleHighlight({ color: "#fff3b0" }).run()}>
-        <Highlighter size={16} />
-      </Btn>
+      <Sep />
 
       {/* Цвет текста */}
-      <span className="flex items-center gap-0.5 px-1">
+      <span className="flex items-center gap-1 px-1" title="Цвет текста">
         {TEXT_COLORS.map((c) => (
           <button
             key={c}
             type="button"
-            title={`Цвет текста ${c}`}
+            title="Цвет текста"
             onMouseDown={(e) => e.preventDefault()}
             onClick={() => editor.chain().focus().setColor(c).run()}
             className="h-4 w-4 rounded-full border border-black/10"
+            style={{ backgroundColor: c }}
+          />
+        ))}
+      </span>
+      <Sep />
+
+      {/* Выделение цветом */}
+      <span className="flex items-center gap-1 px-1" title="Выделить цветом">
+        <Highlighter size={15} className="text-muted" />
+        {HIGHLIGHT_COLORS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            title="Выделить цветом"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
+            className="h-4 w-4 rounded-[4px] border border-black/10"
             style={{ backgroundColor: c }}
           />
         ))}
@@ -148,6 +176,12 @@ export default function EditorToolbar({
       </Btn>
       <Btn title="Чек-лист" active={editor.isActive("taskList")} onClick={() => editor.chain().focus().toggleTaskList().run()}>
         <ListChecks size={16} />
+      </Btn>
+      <Btn title="Уровень глубже (Tab)" onClick={indent}>
+        <Indent size={16} />
+      </Btn>
+      <Btn title="Уровень выше (Shift+Tab)" onClick={outdent}>
+        <Outdent size={16} />
       </Btn>
       <Sep />
 

@@ -29,6 +29,7 @@ interface State {
 
   createNote: () => Promise<string | null>;
   updateNoteContent: (id: string, title: string, content: JSONContent) => Promise<void>;
+  renameNote: (id: string, title: string) => Promise<void>;
   togglePin: (id: string) => Promise<void>;
   softDelete: (id: string) => Promise<void>;
   restore: (id: string) => Promise<void>;
@@ -183,9 +184,27 @@ export const useStore = create<State>((set, get) => ({
     await track(supabase.from("notes").update({ title, content, content_text }).eq("id", id));
   },
 
+  renameNote: async (id, title) => {
+    set((s) => ({
+      notes: s.notes.map((n) =>
+        n.id === id ? { ...n, title, updated_at: new Date().toISOString() } : n,
+      ),
+    }));
+    await track(supabase.from("notes").update({ title }).eq("id", id));
+  },
+
   togglePin: async (id) => {
-    const note = get().notes.find((n) => n.id === id);
+    const { notes } = get();
+    const note = notes.find((n) => n.id === id);
     if (!note) return;
+    // Лимит закреплённых — не более 5.
+    if (!note.is_pinned) {
+      const pinned = notes.filter((n) => !n.deleted_at && n.is_pinned).length;
+      if (pinned >= 5) {
+        alert("Можно закрепить не больше 5 заметок. Открепите одну, чтобы закрепить другую.");
+        return;
+      }
+    }
     const is_pinned = !note.is_pinned;
     set((s) => ({
       notes: s.notes.map((n) => (n.id === id ? { ...n, is_pinned } : n)),
