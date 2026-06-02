@@ -167,8 +167,8 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Шапка */}
-      <div className="flex h-14 items-center gap-1 border-b border-line bg-surface px-2 sm:px-3">
+      {/* Шапка: заголовок + теги в одну строку */}
+      <div className="flex h-14 items-center gap-2 border-b border-line bg-surface px-2 sm:px-3">
         <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
           <ChevronLeft size={20} />
         </IconButton>
@@ -178,6 +178,12 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
           placeholder="Заголовок"
           className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none placeholder:text-muted"
         />
+
+        {/* Теги на одном уровне с названием */}
+        <div className="hidden max-w-[45%] sm:flex">
+          <NoteTagBar noteId={noteId} noteTags={note.tags ?? []} />
+        </div>
+
         <span className="flex w-5 shrink-0 items-center justify-center text-muted" title={saving ? "Сохранение…" : "Сохранено"}>
           {saving ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} className="text-success" strokeWidth={2.5} />}
         </span>
@@ -203,8 +209,10 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
         </div>
       </div>
 
-      {/* Теги заметки (создание/выбор/цвет — прямо под заголовком) */}
-      <NoteTagBar noteId={noteId} noteTags={note.tags ?? []} />
+      {/* Теги на мобильном — отдельной компактной строкой */}
+      <div className="border-b border-line bg-surface px-3 py-2 sm:hidden">
+        <NoteTagBar noteId={noteId} noteTags={note.tags ?? []} />
+      </div>
 
       <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
       <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />

@@ -91,7 +91,7 @@ export default function NoteList() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="ИИ-поиск по заметкам"
+            placeholder="эйай поиск по заметкам"
             className="h-control w-full rounded border border-line bg-bg pl-9 pr-16 text-sm outline-none placeholder:text-muted focus:border-accent"
           />
           {query && (
@@ -140,12 +140,12 @@ export default function NoteList() {
       {(searching || summary !== null) && (
         <div className="border-b border-line bg-accent-soft px-3 py-2.5">
           {searching ? (
-            <p className="text-sm text-muted">ИИ ищет…</p>
+            <p className="text-sm text-muted">эйай ищет…</p>
           ) : (
             <div className="text-sm">
               <div className="mb-1 flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-medium text-accent-strong">
-                  <Sparkles size={14} /> ИИ-сводка
+                  <Sparkles size={14} /> эйай-сводка
                 </span>
                 <button onClick={() => { setSummary(null); setResults([]); }} aria-label="Закрыть" className="text-muted hover:text-ink">
                   <X size={14} />

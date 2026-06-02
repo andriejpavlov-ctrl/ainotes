@@ -7,7 +7,7 @@ import NoteList from "./NoteList";
 import SyncStatus from "./SyncStatus";
 import Button from "./ui/Button";
 import IconButton from "./ui/IconButton";
-import { Plus, FileText, Download, LogOut, Archive, FileEdit } from "lucide-react";
+import { Plus, Download, LogOut, Archive, FileEdit } from "lucide-react";
 
 // Левый столбец: шапка, список, низ (архив, синхронизация, экспорт, выход).
 export default function ListColumn() {
@@ -61,12 +61,12 @@ export default function ListColumn() {
             {view === "archive" ? <FileEdit size={15} /> : <Archive size={15} />}
             {view === "archive" ? "К заметкам" : "Архив"}
           </Button>
-          <IconButton size="sm" variant="outline" onClick={() => exportAll("md")} title="Экспорт в Markdown" aria-label="Экспорт в Markdown">
-            <FileText size={15} />
-          </IconButton>
-          <IconButton size="sm" variant="outline" onClick={() => exportAll("txt")} title="Экспорт в .txt" aria-label="Экспорт в .txt">
-            <Download size={15} />
-          </IconButton>
+          <Button size="sm" variant="outline" onClick={() => exportAll("md")} title="Экспортировать все заметки в Markdown">
+            <Download size={14} /> .md
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => exportAll("txt")} title="Экспортировать все заметки в текст">
+            <Download size={14} /> .txt
+          </Button>
           <IconButton size="sm" variant="outline" onClick={signOut} title="Выйти" aria-label="Выйти">
             <LogOut size={15} />
           </IconButton>
