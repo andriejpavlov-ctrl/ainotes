@@ -109,9 +109,8 @@ export default function SearchOverlay() {
               <X size={18} />
             </button>
           )}
-          <button type="submit" disabled={!query.trim() || searching} className="flex h-8 shrink-0 items-center gap-1.5 rounded bg-accent px-3 text-[13px] font-medium text-accent-ink hover:bg-accent-strong disabled:opacity-40">
-            {searching ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-            эйай
+          <button type="submit" disabled={!query.trim() || searching} className="flex h-8 shrink-0 items-center justify-center rounded bg-accent px-4 text-[13px] font-medium text-accent-ink hover:bg-accent-strong disabled:opacity-40">
+            {searching ? <Loader2 size={14} className="animate-spin" /> : "эйай"}
           </button>
         </form>
 
