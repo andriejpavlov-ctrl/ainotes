@@ -102,7 +102,7 @@ export default function SearchOverlay() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Поиск по заметкам…"
-            className="h-full flex-1 bg-transparent text-base outline-none placeholder:text-muted"
+            className="h-full flex-1 bg-transparent text-base outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
           />
           {query && (
             <button type="button" onClick={() => { setQuery(""); setSummary(null); setResults([]); }} className="shrink-0 text-muted hover:text-ink" aria-label="Очистить">

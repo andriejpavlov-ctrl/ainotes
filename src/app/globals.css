@@ -72,10 +72,19 @@ select {
   font-size: 16px;
 }
 
-/* Единый фокус-ринг */
+/* Единый фокус-ринг (для кнопок/ссылок и навигации с клавиатуры) */
 :focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
   outline-offset: 1px;
+}
+/* У текстовых полей своя подсветка (рамкой) — общий ринг не нужен */
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+[contenteditable]:focus,
+[contenteditable]:focus-visible {
+  outline: none;
 }
 
 /* Тонкие скроллбары */
