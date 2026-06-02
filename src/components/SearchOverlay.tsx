@@ -167,9 +167,6 @@ export default function SearchOverlay() {
 
           {!query && (
             <div className="px-4 py-3">
-              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
-                Умный поиск понимает смысл — спросите своими словами
-              </p>
               <div className="space-y-0.5">
                 {SUGGESTIONS.map((s) => (
                   <button

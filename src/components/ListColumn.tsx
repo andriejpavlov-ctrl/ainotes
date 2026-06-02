@@ -7,7 +7,7 @@ import NoteList from "./NoteList";
 import SyncStatus from "./SyncStatus";
 import Button from "./ui/Button";
 import IconButton from "./ui/IconButton";
-import { Plus, Download, LogOut, Archive, FileEdit, Search } from "lucide-react";
+import { Download, LogOut, Archive, FileEdit, Search } from "lucide-react";
 
 // Левый столбец: шапка, список, низ (архив, синхронизация, экспорт, выход).
 export default function ListColumn() {
@@ -44,7 +44,7 @@ export default function ListColumn() {
             <Search size={16} />
           </IconButton>
           <Button size="sm" variant="primary" onClick={() => createNote()}>
-            <Plus size={16} /> Новая
+            Создать
           </Button>
         </div>
       </header>
