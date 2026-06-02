@@ -76,7 +76,7 @@ export default function SearchOverlay() {
         body: JSON.stringify({ query }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) setSummary("эйай не ответил: " + (data.error || `ошибка ${res.status}`));
+      if (!res.ok) setSummary("Не удалось получить ответ: " + (data.error || `ошибка ${res.status}`));
       else {
         setSummary(data.summary ?? "");
         setResults(data.relevant_ids ?? []);
@@ -115,20 +115,20 @@ export default function SearchOverlay() {
         </form>
 
         <div className="max-h-[55vh] overflow-y-auto">
-          {/* эйай-сводка */}
+          {/* Сводка */}
           {(searching || summary) && (
             <div className="border-b border-line bg-accent-soft px-4 py-3 text-sm">
               <div className="mb-1 flex items-center gap-1.5 font-medium text-accent-strong">
-                <Sparkles size={14} /> эйай-сводка
+                <Sparkles size={14} /> Сводка
               </div>
-              {searching ? <p className="text-muted">эйай ищет…</p> : <p className="leading-relaxed text-ink">{summary}</p>}
+              {searching ? <p className="text-muted">Идёт поиск…</p> : <p className="leading-relaxed text-ink">{summary}</p>}
             </div>
           )}
 
           {/* Результаты ИИ */}
           {aiResultNotes.length > 0 && (
             <div className="py-1">
-              <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Нашёл эйай</div>
+              <div className="px-4 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Подходящие по смыслу</div>
               {aiResultNotes.map((n) => (
                 <ResultRow key={n.id} note={n} onClick={() => openNote(n.id)} />
               ))}
@@ -148,13 +148,13 @@ export default function SearchOverlay() {
           {/* Пусто */}
           {query && !searching && quick.length === 0 && aiResultNotes.length === 0 && !summary && (
             <p className="px-4 py-6 text-center text-sm text-muted">
-              Ничего не найдено. Нажмите «эйай» для умного поиска.
+              Совпадений нет. Нажмите Enter для умного поиска.
             </p>
           )}
 
           {!query && (
             <p className="px-4 py-6 text-center text-sm text-muted">
-              Введите запрос. Enter — умный поиск с эйай-сводкой.
+              Введите запрос. Enter — умный поиск со сводкой.
             </p>
           )}
         </div>
