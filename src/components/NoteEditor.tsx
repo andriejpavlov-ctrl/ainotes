@@ -218,9 +218,12 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
           <EditorContent editor={editor} />
         </div>
 
-        {/* Масштаб текста (50–150%) */}
-        <div className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-line bg-surface/95 px-3 py-1.5 shadow-pop backdrop-blur">
-          <span className="w-9 text-right text-[11px] tabular-nums text-muted">{scale}%</span>
+        {/* Масштаб текста (50–150%) — как в Safari: «А» меньше → больше */}
+        <div
+          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-line bg-surface/95 px-3 py-1.5 shadow-pop backdrop-blur"
+          title={`Масштаб текста ${scale}%`}
+        >
+          <span className="leading-none text-muted" style={{ fontSize: 11 }}>А</span>
           <input
             type="range"
             min={0}
@@ -228,10 +231,10 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
             step={1}
             value={Math.max(0, SCALES.indexOf(scale))}
             onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
-            className="w-28 accent-[var(--accent)]"
-            title="Масштаб текста"
+            className="w-24 cursor-pointer accent-[var(--accent)]"
             aria-label="Масштаб текста"
           />
+          <span className="leading-none text-muted" style={{ fontSize: 19 }}>А</span>
         </div>
       </div>
 
