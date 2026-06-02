@@ -79,6 +79,23 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleRef = useRef(title);
   titleRef.current = title;
+  const autoTitleRef = useRef(false); // авто-заголовок генерируем один раз
+
+  // ИИ придумывает заголовок по содержимому, если пользователь его не задал.
+  async function generateTitle(text: string) {
+    try {
+      const res = await fetch("/api/title", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.title && !titleRef.current.trim()) setTitle(data.title);
+      else if (!data.title) autoTitleRef.current = false;
+    } catch {
+      autoTitleRef.current = false;
+    }
+  }
 
   const editor = useEditor({
     extensions: buildExtensions(),
@@ -100,7 +117,14 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
       // Автоматически проставляем неразрывные пробелы перед сохранением (№6).
       const doc = applyNbspToDoc(editor.getJSON() as JSONContent);
       await updateNoteContent(noteId, titleRef.current, doc);
+      // Если названия нет, а текст уже есть — просим ИИ придумать заголовок.
+      const text = docToPlainText(doc);
+      if (!titleRef.current.trim() && text.trim().length >= 15 && !autoTitleRef.current) {
+        autoTitleRef.current = true;
+        generateTitle(text);
+      }
     }, 700);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, noteId, updateNoteContent]);
 
   // Сохранение при изменении заголовка.
@@ -175,83 +199,88 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Шапка: заголовок + теги в одну строку */}
-      <div className="flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
-        <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
-          <ChevronLeft size={20} />
-        </IconButton>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Заголовок"
-          className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
-        />
-
-        {/* Меню действий */}
-        <div className="relative">
-          <IconButton onClick={() => setMenuOpen((v) => !v)} aria-label="Действия">
-            <MoreVertical size={18} />
+    <div className="relative flex h-full flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {/* Шапка: заголовок (прилипает при скролле) */}
+        <div className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
+          <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
+            <ChevronLeft size={20} />
           </IconButton>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
-                <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
-                <MenuItem icon={<Scissors size={16} />} label="Сократить (ИИ)" onClick={shortenNote} />
-                <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
-                <MenuItem icon={<FileDown size={16} />} label="Экспорт в .txt" onClick={() => exportNote("txt")} />
-                <div className="my-1 h-px bg-line" />
-                <MenuItem icon={<Trash2 size={16} />} label="В архив" danger onClick={() => { softDelete(noteId); setMenuOpen(false); }} />
-              </div>
-            </>
-          )}
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Заголовок"
+            className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
+          />
+
+          {/* Меню действий */}
+          <div className="relative">
+            <IconButton onClick={() => setMenuOpen((v) => !v)} aria-label="Действия">
+              <MoreVertical size={18} />
+            </IconButton>
+            {menuOpen && (
+              <>
+                <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
+                  <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
+                  <MenuItem icon={<Scissors size={16} />} label="Сократить (ИИ)" onClick={shortenNote} />
+                  <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
+                  <MenuItem icon={<FileDown size={16} />} label="Экспорт в .txt" onClick={() => exportNote("txt")} />
+                  <div className="my-1 h-px bg-line" />
+                  <MenuItem icon={<Trash2 size={16} />} label="В архив" danger onClick={() => { softDelete(noteId); setMenuOpen(false); }} />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Панель инструментов (прилипает под шапкой) */}
+        <div className="sticky top-14 z-20">
+          <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
+        </div>
+
+        {/* Контент с масштабом */}
+        <div style={{ fontSize: `${scale}%` }}>
+          <EditorContent editor={editor} />
         </div>
       </div>
 
-      <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
       <TableControls editor={editor} />
       <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
 
-      <div className="relative min-h-0 flex-1">
-        <div className="h-full overflow-y-auto" style={{ fontSize: `${scale}%` }}>
-          <EditorContent editor={editor} />
-        </div>
-
-        {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
-        <div
-          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 text-muted opacity-60 transition hover:opacity-100"
-          title={`Масштаб текста ${scale}%`}
+      {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
+      <div
+        className="absolute bottom-4 right-4 z-20 flex items-center gap-2 text-muted opacity-60 transition hover:opacity-100"
+        title={`Масштаб текста ${scale}%`}
+      >
+        <button
+          type="button"
+          onClick={() => changeScale(SCALES[Math.max(0, SCALES.indexOf(scale) - 1)])}
+          className="leading-none hover:text-ink"
+          style={{ fontSize: 10 }}
+          aria-label="Меньше"
         >
-          <button
-            type="button"
-            onClick={() => changeScale(SCALES[Math.max(0, SCALES.indexOf(scale) - 1)])}
-            className="leading-none hover:text-ink"
-            style={{ fontSize: 10 }}
-            aria-label="Меньше"
-          >
-            А
-          </button>
-          <input
-            type="range"
-            min={0}
-            max={4}
-            step={1}
-            value={Math.max(0, SCALES.indexOf(scale))}
-            onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
-            className="scale-slider w-20"
-            aria-label="Масштаб текста"
-          />
-          <button
-            type="button"
-            onClick={() => changeScale(SCALES[Math.min(SCALES.length - 1, SCALES.indexOf(scale) + 1)])}
-            className="leading-none hover:text-ink"
-            style={{ fontSize: 17 }}
-            aria-label="Больше"
-          >
-            А
-          </button>
-        </div>
+          А
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={4}
+          step={1}
+          value={Math.max(0, SCALES.indexOf(scale))}
+          onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
+          className="scale-slider w-20"
+          aria-label="Масштаб текста"
+        />
+        <button
+          type="button"
+          onClick={() => changeScale(SCALES[Math.min(SCALES.length - 1, SCALES.indexOf(scale) + 1)])}
+          className="leading-none hover:text-ink"
+          style={{ fontSize: 17 }}
+          aria-label="Больше"
+        >
+          А
+        </button>
       </div>
 
       {shortening && (
