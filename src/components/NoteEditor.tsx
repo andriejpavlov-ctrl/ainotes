@@ -176,7 +176,7 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Заголовок"
-          className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none placeholder:text-muted"
+          className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
         />
 
         {/* Теги на одном уровне с названием */}
