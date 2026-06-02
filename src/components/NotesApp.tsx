@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useStore } from "@/lib/store";
 import ListColumn from "./ListColumn";
-import NoteEditor from "./NoteEditor";
 import SearchOverlay from "./SearchOverlay";
+
+// Редактор (TipTap) тяжёлый — грузим его лениво, чтобы список
+// появлялся быстро и не тянул лишний JS на старте.
+const NoteEditor = dynamic(() => import("./NoteEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center text-[var(--muted)]">Загрузка…</div>
+  ),
+});
 
 export default function NotesApp({ userId }: { userId: string; email: string }) {
   const init = useStore((s) => s.init);

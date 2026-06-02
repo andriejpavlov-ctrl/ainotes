@@ -48,6 +48,32 @@ interface State {
 
 const supabase = createClient();
 
+// ── Локальный кэш (мгновенный показ списка до ответа сети) ──────────
+const CACHE_PREFIX = "ai-notes-cache:";
+
+function loadCache(userId: string): { notes: Note[]; reminders: Reminder[] } | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const raw = localStorage.getItem(CACHE_PREFIX + userId);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+let cacheTimer: ReturnType<typeof setTimeout> | null = null;
+function saveCache(userId: string, notes: Note[], reminders: Reminder[]) {
+  if (typeof localStorage === "undefined") return;
+  if (cacheTimer) clearTimeout(cacheTimer);
+  cacheTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(CACHE_PREFIX + userId, JSON.stringify({ notes, reminders }));
+    } catch {
+      // переполнение квоты — игнорируем
+    }
+  }, 300);
+}
+
 // Загрузка заметок и напоминаний. ok=false при ошибке заметок,
 // чтобы не затирать уже показанные данные при сбое токена.
 async function fetchAll(userId: string) {
@@ -69,6 +95,7 @@ async function fetchAll(userId: string) {
 }
 
 let realtimeBound = false;
+let cacheSubBound = false;
 
 // Счётчик незавершённых записей в БД для индикатора синхронизации.
 let pendingWrites = 0;
@@ -102,10 +129,26 @@ export const useStore = create<State>((set, get) => ({
   searchOpen: false,
 
   init: async (userId) => {
-    set({ userId, loading: true });
+    set({ userId });
+
+    // 1) Мгновенно показываем список из локального кэша.
+    const cached = loadCache(userId);
+    if (cached && cached.notes) {
+      set({ notes: cached.notes, reminders: cached.reminders ?? [], loading: false });
+    } else {
+      set({ loading: true });
+    }
+
+    // Сохраняем кэш при любых изменениях заметок/напоминаний (один раз).
+    if (!cacheSubBound) {
+      cacheSubBound = true;
+      useStore.subscribe((s) => {
+        if (s.userId) saveCache(s.userId, s.notes, s.reminders);
+      });
+    }
+
+    // 2) Обновляем из сети в фоне (stale-while-revalidate).
     try {
-      // Дожидаемся, пока клиент восстановит сессию из хранилища,
-      // иначе первый запрос может уйти без токена и вернуть пусто.
       await supabase.auth.getSession();
       const { ok, notes, reminders } = await fetchAll(userId);
       if (ok) set({ notes, reminders });
