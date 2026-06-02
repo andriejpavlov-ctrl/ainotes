@@ -52,8 +52,9 @@ export default function EditorBubbleMenu({
   return (
     <BubbleMenu
       editor={editor}
+      pluginKey="aiMenu"
       tippyOptions={{ duration: 100, maxWidth: "none" }}
-      shouldShow={({ editor: ed, from, to }) => from !== to && !ed.isActive("codeBlock")}
+      shouldShow={({ editor: ed, from, to }) => from !== to && !ed.isActive("codeBlock") && !ed.isActive("table")}
     >
       <div className="flex items-center gap-0.5 rounded-lg border border-[var(--border)] bg-[var(--panel)] p-1 shadow-lg">
         {busy ? (
