@@ -258,59 +258,61 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
         </div>
       </div>
 
-      {mode === "text" ? (
-        <>
-          {/* Панель инструментов */}
-          <div className="min-w-0 shrink-0">
-            <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
+      {/* Текстовый редактор: не размонтируем при переходе на доску
+          (иначе конфликт React/ProseMirror), а просто скрываем. */}
+      <div className={`relative flex min-h-0 min-w-0 flex-1 flex-col ${mode === "board" ? "hidden" : ""}`}>
+        {/* Панель инструментов */}
+        <div className="min-w-0 shrink-0">
+          <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
+        </div>
+
+        {/* Контент с масштабом */}
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div style={{ fontSize: `${scale}%` }}>
+            <EditorContent editor={editor} />
           </div>
+        </div>
 
-          {/* Контент с масштабом */}
-          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
-            <div style={{ fontSize: `${scale}%` }}>
-              <EditorContent editor={editor} />
-            </div>
-          </div>
+        <TableControls editor={editor} />
+        <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
 
-          <TableControls editor={editor} />
-          <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
-
-          {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
-          <div
-            className="absolute bottom-4 right-4 z-20 flex items-center gap-2 text-muted opacity-60 transition hover:opacity-100"
-            title={`Масштаб текста ${scale}%`}
+        {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
+        <div
+          className="absolute bottom-4 right-4 z-20 flex items-center gap-2 text-muted opacity-60 transition hover:opacity-100"
+          title={`Масштаб текста ${scale}%`}
+        >
+          <button
+            type="button"
+            onClick={() => changeScale(SCALES[Math.max(0, SCALES.indexOf(scale) - 1)])}
+            className="leading-none hover:text-ink"
+            style={{ fontSize: 10 }}
+            aria-label="Меньше"
           >
-            <button
-              type="button"
-              onClick={() => changeScale(SCALES[Math.max(0, SCALES.indexOf(scale) - 1)])}
-              className="leading-none hover:text-ink"
-              style={{ fontSize: 10 }}
-              aria-label="Меньше"
-            >
-              А
-            </button>
-            <input
-              type="range"
-              min={0}
-              max={4}
-              step={1}
-              value={Math.max(0, SCALES.indexOf(scale))}
-              onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
-              className="scale-slider w-20"
-              aria-label="Масштаб текста"
-            />
-            <button
-              type="button"
-              onClick={() => changeScale(SCALES[Math.min(SCALES.length - 1, SCALES.indexOf(scale) + 1)])}
-              className="leading-none hover:text-ink"
-              style={{ fontSize: 17 }}
-              aria-label="Больше"
-            >
-              А
-            </button>
-          </div>
-        </>
-      ) : (
+            А
+          </button>
+          <input
+            type="range"
+            min={0}
+            max={4}
+            step={1}
+            value={Math.max(0, SCALES.indexOf(scale))}
+            onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
+            className="scale-slider w-20"
+            aria-label="Масштаб текста"
+          />
+          <button
+            type="button"
+            onClick={() => changeScale(SCALES[Math.min(SCALES.length - 1, SCALES.indexOf(scale) + 1)])}
+            className="leading-none hover:text-ink"
+            style={{ fontSize: 17 }}
+            aria-label="Больше"
+          >
+            А
+          </button>
+        </div>
+      </div>
+
+      {mode === "board" && (
         <Board board={note.board ?? EMPTY_BOARD} onChange={(b) => updateNoteBoard(noteId, b)} />
       )}
 
