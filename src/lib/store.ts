@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
 import { docToPlainText } from "@/lib/markdown";
 import { genId } from "@/lib/id";
-import { EMPTY_DOC, type JSONContent, type Note, type Reminder } from "@/lib/types";
+import { EMPTY_DOC, type Board, type JSONContent, type Note, type Reminder } from "@/lib/types";
 
 type View = "active" | "archive";
 export type SyncStatus = "synced" | "saving" | "error";
@@ -29,6 +29,7 @@ interface State {
 
   createNote: () => Promise<string | null>;
   updateNoteContent: (id: string, title: string, content: JSONContent) => Promise<void>;
+  updateNoteBoard: (id: string, board: Board) => Promise<void>;
   renameNote: (id: string, title: string) => Promise<void>;
   togglePin: (id: string) => Promise<void>;
   softDelete: (id: string) => Promise<void>;
@@ -238,6 +239,15 @@ export const useStore = create<State>((set, get) => ({
       ),
     }));
     await track(supabase.from("notes").update({ title, content, content_text }).eq("id", id));
+  },
+
+  updateNoteBoard: async (id, board) => {
+    set((s) => ({
+      notes: s.notes.map((n) =>
+        n.id === id ? { ...n, board, updated_at: new Date().toISOString() } : n,
+      ),
+    }));
+    await track(supabase.from("notes").update({ board }).eq("id", id));
   },
 
   renameNote: async (id, title) => {

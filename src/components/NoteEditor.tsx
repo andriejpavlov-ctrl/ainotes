@@ -13,11 +13,12 @@ import {
   downloadFile,
   safeFilename,
 } from "@/lib/markdown";
-import type { JSONContent } from "@/lib/types";
+import { EMPTY_BOARD, type JSONContent } from "@/lib/types";
 import EditorToolbar from "./EditorToolbar";
 import EditorBubbleMenu from "./EditorBubbleMenu";
 import ReminderDialog from "./ReminderDialog";
 import TableControls from "./TableControls";
+import Board from "./Board";
 import IconButton from "./ui/IconButton";
 import {
   ChevronLeft,
@@ -27,6 +28,8 @@ import {
   FileDown,
   Trash2,
   Loader2,
+  Type,
+  LayoutGrid,
 } from "lucide-react";
 
 // Преобразует «плоский» текст (абзацы через пустую строку) в документ TipTap.
@@ -54,10 +57,12 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
   const note = useStore((s) => s.notes.find((n) => n.id === noteId));
   const userId = useStore((s) => s.userId);
   const updateNoteContent = useStore((s) => s.updateNoteContent);
+  const updateNoteBoard = useStore((s) => s.updateNoteBoard);
   const softDelete = useStore((s) => s.softDelete);
   const select = useStore((s) => s.select);
 
   const [title, setTitle] = useState(note?.title ?? "");
+  const [mode, setMode] = useState<"text" | "board">("text");
   const [menuOpen, setMenuOpen] = useState(false);
   const [reminderFor, setReminderFor] = useState<string | null | undefined>(undefined);
   const [shortening, setShortening] = useState(false);
@@ -200,88 +205,114 @@ export default function NoteEditor({ noteId }: { noteId: string }) {
 
   return (
     <div className="relative flex h-full min-w-0 flex-col">
-      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Шапка: заголовок (прилипает при скролле) */}
-        <div className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
-          <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
-            <ChevronLeft size={20} />
-          </IconButton>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Заголовок"
-            className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
-          />
-
-          {/* Меню действий */}
-          <div className="relative">
-            <IconButton onClick={() => setMenuOpen((v) => !v)} aria-label="Действия">
-              <MoreVertical size={18} />
-            </IconButton>
-            {menuOpen && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-                <div className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
-                  <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
-                  <MenuItem icon={<Scissors size={16} />} label="Сократить (AI)" onClick={shortenNote} />
-                  <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
-                  <MenuItem icon={<FileDown size={16} />} label="Экспорт в .txt" onClick={() => exportNote("txt")} />
-                  <div className="my-1 h-px bg-line" />
-                  <MenuItem icon={<Trash2 size={16} />} label="В архив" danger onClick={() => { softDelete(noteId); setMenuOpen(false); }} />
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Панель инструментов (прилипает под шапкой) */}
-        <div className="sticky top-14 z-20 min-w-0">
-          <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
-        </div>
-
-        {/* Контент с масштабом */}
-        <div style={{ fontSize: `${scale}%` }}>
-          <EditorContent editor={editor} />
-        </div>
-      </div>
-
-      <TableControls editor={editor} />
-      <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
-
-      {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
-      <div
-        className="absolute bottom-4 right-4 z-20 flex items-center gap-2 text-muted opacity-60 transition hover:opacity-100"
-        title={`Масштаб текста ${scale}%`}
-      >
-        <button
-          type="button"
-          onClick={() => changeScale(SCALES[Math.max(0, SCALES.indexOf(scale) - 1)])}
-          className="leading-none hover:text-ink"
-          style={{ fontSize: 10 }}
-          aria-label="Меньше"
-        >
-          А
-        </button>
+      {/* Шапка */}
+      <div className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-surface px-3 sm:px-4">
+        <IconButton onClick={() => select(null)} className="md:hidden" aria-label="Назад">
+          <ChevronLeft size={20} />
+        </IconButton>
         <input
-          type="range"
-          min={0}
-          max={4}
-          step={1}
-          value={Math.max(0, SCALES.indexOf(scale))}
-          onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
-          className="scale-slider w-20"
-          aria-label="Масштаб текста"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Заголовок"
+          className="min-w-0 flex-1 bg-transparent px-1 text-[17px] font-semibold tracking-tight outline-none focus:outline-none focus-visible:outline-none placeholder:text-muted"
         />
-        <button
-          type="button"
-          onClick={() => changeScale(SCALES[Math.min(SCALES.length - 1, SCALES.indexOf(scale) + 1)])}
-          className="leading-none hover:text-ink"
-          style={{ fontSize: 17 }}
-          aria-label="Больше"
-        >
-          А
-        </button>
+
+        {/* Переключатель Текст / Доска */}
+        <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-line p-0.5">
+          <button
+            onClick={() => setMode("text")}
+            className={`flex h-7 w-7 items-center justify-center rounded-md ${mode === "text" ? "bg-accent text-accent-ink" : "text-muted hover:bg-surface2"}`}
+            title="Текст"
+            aria-label="Текст"
+          >
+            <Type size={16} />
+          </button>
+          <button
+            onClick={() => setMode("board")}
+            className={`flex h-7 w-7 items-center justify-center rounded-md ${mode === "board" ? "bg-accent text-accent-ink" : "text-muted hover:bg-surface2"}`}
+            title="Доска"
+            aria-label="Доска"
+          >
+            <LayoutGrid size={16} />
+          </button>
+        </div>
+
+        {/* Меню действий */}
+        <div className="relative">
+          <IconButton onClick={() => setMenuOpen((v) => !v)} aria-label="Действия">
+            <MoreVertical size={18} />
+          </IconButton>
+          {menuOpen && (
+            <>
+              <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
+              <div className="absolute right-0 z-40 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-surface py-1 shadow-pop">
+                <MenuItem icon={<Bell size={16} />} label="Напоминание" onClick={() => { setReminderFor(null); setMenuOpen(false); }} />
+                <MenuItem icon={<Scissors size={16} />} label="Сократить (AI)" onClick={shortenNote} />
+                <MenuItem icon={<FileDown size={16} />} label="Экспорт в Markdown" onClick={() => exportNote("md")} />
+                <MenuItem icon={<FileDown size={16} />} label="Экспорт в .txt" onClick={() => exportNote("txt")} />
+                <div className="my-1 h-px bg-line" />
+                <MenuItem icon={<Trash2 size={16} />} label="В архив" danger onClick={() => { softDelete(noteId); setMenuOpen(false); }} />
+              </div>
+            </>
+          )}
+        </div>
       </div>
+
+      {mode === "text" ? (
+        <>
+          {/* Панель инструментов */}
+          <div className="min-w-0 shrink-0">
+            <EditorToolbar editor={editor} onImage={handleImage} imageCount={imageCount} />
+          </div>
+
+          {/* Контент с масштабом */}
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+            <div style={{ fontSize: `${scale}%` }}>
+              <EditorContent editor={editor} />
+            </div>
+          </div>
+
+          <TableControls editor={editor} />
+          <EditorBubbleMenu editor={editor} onRemind={(text) => setReminderFor(text)} />
+
+          {/* Масштаб текста (50–150%) — приглушённый, как в Safari */}
+          <div
+            className="absolute bottom-4 right-4 z-20 flex items-center gap-2 text-muted opacity-60 transition hover:opacity-100"
+            title={`Масштаб текста ${scale}%`}
+          >
+            <button
+              type="button"
+              onClick={() => changeScale(SCALES[Math.max(0, SCALES.indexOf(scale) - 1)])}
+              className="leading-none hover:text-ink"
+              style={{ fontSize: 10 }}
+              aria-label="Меньше"
+            >
+              А
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={4}
+              step={1}
+              value={Math.max(0, SCALES.indexOf(scale))}
+              onChange={(e) => changeScale(SCALES[Number(e.target.value)])}
+              className="scale-slider w-20"
+              aria-label="Масштаб текста"
+            />
+            <button
+              type="button"
+              onClick={() => changeScale(SCALES[Math.min(SCALES.length - 1, SCALES.indexOf(scale) + 1)])}
+              className="leading-none hover:text-ink"
+              style={{ fontSize: 17 }}
+              aria-label="Больше"
+            >
+              А
+            </button>
+          </div>
+        </>
+      ) : (
+        <Board board={note.board ?? EMPTY_BOARD} onChange={(b) => updateNoteBoard(noteId, b)} />
+      )}
 
       {shortening && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30">
